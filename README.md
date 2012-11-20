@@ -44,7 +44,6 @@ Mention next information in your question/problem:
 ``` java
 ImageView imageView = ...
 String imageUrl = "http://site.com/image.png"; // or "file:///mnt/sdcard/images/image.jpg"
-
 // Get singletone instance of ImageLoader
 ImageLoader imageLoader = ImageLoader.getInstance();
 // Initialize ImageLoader with configuration. Do it once.
@@ -59,7 +58,6 @@ ImageView imageView = ...
 String imageUrl = "http://site.com/image.png"; // or "file:///mnt/sdcard/images/image.jpg"
 ProgressBar spinner = ...
 File cacheDir = StorageUtils.getOwnCacheDirectory(getApplicationContext(), "UniversalImageLoader/Cache");
-
 // Get singletone instance of ImageLoader
 ImageLoader imageLoader = ImageLoader.getInstance();
 // Create configuration for ImageLoader (all options are optional, use only those you really want to customize)
