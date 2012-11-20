@@ -5,3 +5,9 @@
 */.externalToolBuilders
 build.xml
 local.properties
+.idea
+gen-external-apklibs
+*.iml
+target
+.DS_Store
+out

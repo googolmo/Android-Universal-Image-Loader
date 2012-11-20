@@ -1,6 +1,7 @@
 package com.nostra13.example.universalimageloader.widget;
 
 import static com.nostra13.example.universalimageloader.Constants.IMAGES;
+
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
@@ -18,50 +19,51 @@ import com.nostra13.universalimageloader.core.display.FakeBitmapDisplayer;
 
 /**
  * Example widget provider
- * 
+ *
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
  */
 public class UILWidgetProvider extends AppWidgetProvider {
 
-	private static DisplayImageOptions optionsWithFakeDisplayer;
+    private static DisplayImageOptions optionsWithFakeDisplayer;
 
-	static {
-		optionsWithFakeDisplayer = new DisplayImageOptions.Builder().displayer(new FakeBitmapDisplayer()).build();
-	}
+    static {
+        optionsWithFakeDisplayer = new DisplayImageOptions.Builder().displayer(new FakeBitmapDisplayer()).build();
+    }
 
-	@Override
-	public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-		// Initialize ImageLoader with configuration.
-		ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(context).threadPoolSize(3).threadPriority(Thread.NORM_PRIORITY - 2)
-				.memoryCacheSize(1500000) // 1.5 Mb
-				.denyCacheImageMultipleSizesInMemory().discCacheFileNameGenerator(new Md5FileNameGenerator()).enableLogging() // Not necessary in common
-				.build();
-		ImageLoader.getInstance().init(config);
+    @Override
+    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+        // Initialize ImageLoader with configuration.
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(context).threadPoolSize(3).threadPriority(Thread.NORM_PRIORITY - 2)
+                .memoryCachePercent(20) // 1.5 Mb
+                .denyCacheImageMultipleSizesInMemory(false)
+                .discCacheFileNameGenerator(new Md5FileNameGenerator()).enableLogging() // Not necessary in common
+                .build();
+        ImageLoader.getInstance().init(config);
 
-		final int N = appWidgetIds.length;
-		for (int i = 0; i < N; i++) {
-			int appWidgetId = appWidgetIds[i];
-			updateAppWidget(context, appWidgetManager, appWidgetId);
-		}
-	}
+        final int N = appWidgetIds.length;
+        for (int i = 0; i < N; i++) {
+            int appWidgetId = appWidgetIds[i];
+            updateAppWidget(context, appWidgetManager, appWidgetId);
+        }
+    }
 
-	static void updateAppWidget(Context context, final AppWidgetManager appWidgetManager, final int appWidgetId) {
-		final RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
+    static void updateAppWidget(Context context, final AppWidgetManager appWidgetManager, final int appWidgetId) {
+        final RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
 
-		ImageSize minImageSize = new ImageSize(70, 70); // 70 - approximate size of ImageView in widget
-		ImageLoader.getInstance().loadImage(context, IMAGES[0], minImageSize, optionsWithFakeDisplayer, new SimpleImageLoadingListener() {
-			@Override
-			public void onLoadingComplete(Bitmap loadedImage) {
-				views.setImageViewBitmap(R.id.image_left, loadedImage);
-				appWidgetManager.updateAppWidget(appWidgetId, views);
-			}
-		});
-		ImageLoader.getInstance().loadImage(context, IMAGES[1], minImageSize, optionsWithFakeDisplayer, new SimpleImageLoadingListener() {
-			@Override
-			public void onLoadingComplete(Bitmap loadedImage) {
-				views.setImageViewBitmap(R.id.image_right, loadedImage);
-				appWidgetManager.updateAppWidget(appWidgetId, views);
-			}
-		});
-	}
+        ImageSize minImageSize = new ImageSize(70, 70); // 70 - approximate size of ImageView in widget
+        ImageLoader.getInstance().loadImage(context, IMAGES[0], minImageSize, optionsWithFakeDisplayer, new SimpleImageLoadingListener() {
+            @Override
+            public void onLoadingComplete(Bitmap loadedImage) {
+                views.setImageViewBitmap(R.id.image_left, loadedImage);
+                appWidgetManager.updateAppWidget(appWidgetId, views);
+            }
+        });
+        ImageLoader.getInstance().loadImage(context, IMAGES[1], minImageSize, optionsWithFakeDisplayer, new SimpleImageLoadingListener() {
+            @Override
+            public void onLoadingComplete(Bitmap loadedImage) {
+                views.setImageViewBitmap(R.id.image_right, loadedImage);
+                appWidgetManager.updateAppWidget(appWidgetId, views);
+            }
+        });
+    }
 }

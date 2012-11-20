@@ -12,18 +12,18 @@ import org.apache.http.entity.BufferedHttpEntity;
 
 public class HttpClientImageDownloader extends ImageDownloader {
 
-	private HttpClient httpClient;
+    private HttpClient httpClient;
 
-	public HttpClientImageDownloader(HttpClient httpClient) {
-		this.httpClient = httpClient;
-	}
+    public HttpClientImageDownloader(HttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
 
-	@Override
-	protected InputStream getStreamFromNetwork(URI imageUri) throws IOException {
-		HttpGet httpRequest = new HttpGet(imageUri.toString());
-		HttpResponse response = httpClient.execute(httpRequest);
-		HttpEntity entity = response.getEntity();
-		BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
-		return bufHttpEntity.getContent();
-	}
+    @Override
+    protected InputStream getStreamFromNetwork(URI imageUri) throws IOException {
+        HttpGet httpRequest = new HttpGet(imageUri.toString());
+        HttpResponse response = httpClient.execute(httpRequest);
+        HttpEntity entity = response.getEntity();
+        BufferedHttpEntity bufHttpEntity = new BufferedHttpEntity(entity);
+        return bufHttpEntity.getContent();
+    }
 }

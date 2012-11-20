@@ -11,7 +11,7 @@ import com.nostra13.universalimageloader.core.assist.MemoryCacheUtil;
 
 /**
  * Information for load'n'display image task
- * 
+ *
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
  * @see MemoryCacheUtil
  * @see DisplayImageOptions
@@ -19,21 +19,21 @@ import com.nostra13.universalimageloader.core.assist.MemoryCacheUtil;
  */
 final class ImageLoadingInfo {
 
-	final String uri;
-	final String memoryCacheKey;
-	final ImageView imageView;
-	final ImageSize targetSize;
-	final DisplayImageOptions options;
-	final ImageLoadingListener listener;
-	final ReentrantLock loadFromUriLock;
+    final String uri;
+    final String memoryCacheKey;
+    final ImageView imageView;
+    final ImageSize targetSize;
+    final DisplayImageOptions options;
+    final ImageLoadingListener listener;
+    final ReentrantLock loadFromUriLock;
 
-	public ImageLoadingInfo(String uri, ImageView imageView, ImageSize targetSize, DisplayImageOptions options, ImageLoadingListener listener, ReentrantLock loadFromUriLock) {
-		this.uri = Uri.encode(uri, "@#&=*+-_.,:!?()/~'%");
-		this.imageView = imageView;
-		this.targetSize = targetSize;
-		this.options = options;
-		this.listener = listener;
-		this.loadFromUriLock = loadFromUriLock;
-		memoryCacheKey = MemoryCacheUtil.generateKey(uri, targetSize);
-	}
+    public ImageLoadingInfo(String uri, ImageView imageView, ImageSize targetSize, DisplayImageOptions options, ImageLoadingListener listener, ReentrantLock loadFromUriLock) {
+        this.uri = Uri.encode(uri, "@#&=*+-_.,:!?()/~'%");
+        this.imageView = imageView;
+        this.targetSize = targetSize;
+        this.options = options;
+        this.listener = listener;
+        this.loadFromUriLock = loadFromUriLock;
+        memoryCacheKey = MemoryCacheUtil.generateKey(uri, targetSize);
+    }
 }

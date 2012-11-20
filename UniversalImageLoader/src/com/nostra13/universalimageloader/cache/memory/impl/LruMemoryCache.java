@@ -1,11 +1,12 @@
 package com.nostra13.universalimageloader.cache.memory.impl;
 
-import java.util.Collection;
-
+import android.app.ActivityManager;
+import android.content.Context;
 import android.graphics.Bitmap;
-
-import android.support.v4.util.LruCache;
 import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
+import com.nostra13.universalimageloader.utils.LruCache;
+
+import java.util.Collection;
 
 /**
  * Limited {@link Bitmap bitmap} cache. Provides {@link Bitmap bitmaps} storing. Size of all stored bitmaps will not to
@@ -13,34 +14,42 @@ import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
  *
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
  */
-public class LruMemoryCache implements MemoryCacheAware {
+public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 
-    private static final int INITIAL_CAPACITY = 10;
-    private static final float LOAD_FACTOR = 1.1f;
+    public static final int DEFAULT_MEMORY_CACHE_PERCENTAGE = 25;
+    private static final int DEFAULT_MEMORY_CAPACITY_FOR_DEVICES_OLDER_THAN_API_LEVEL_4 = 12;
+    private LruCache<String, Bitmap> mCache;
     private int capacity;
 
-    /**
-     * Cache providing Least-Recently-Used logic
-     *
-     */
-//    private final Map<String, Bitmap> lruCache = Collections.synchronizedMap(new LinkedHashMap<String, Bitmap>(INITIAL_CAPACITY, LOAD_FACTOR, true));
 
-    private LruCache<String, Bitmap> lruCache;
+    public LruMemoryCache(Context context, int percentageOfMemoryForCache) {
+        int memClass = ((ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
 
-
-    public LruMemoryCache(int sizeLimit) {
-        capacity = sizeLimit * 1204 * 1024;
-//        lruCache = new LruCache<String, Bitmap>(sizeLimit * 1024 * 1024);
+        if(memClass == 0) {
+            memClass = DEFAULT_MEMORY_CAPACITY_FOR_DEVICES_OLDER_THAN_API_LEVEL_4;
+        }
+        if(percentageOfMemoryForCache < 0) {
+            percentageOfMemoryForCache = 0;
+        }
+        if(percentageOfMemoryForCache > 81) {
+            percentageOfMemoryForCache = 80;
+        }
+        this.capacity = (1024 *1024*(memClass * percentageOfMemoryForCache))/100;
+        if(this.capacity <= 0) {
+            this.capacity = 1024*1024*4;
+        }
+        reset();
     }
 
     private void reset() {
-        if (lruCache != null) {
-            lruCache.evictAll();
+        if (this.mCache != null) {
+            this.mCache.evictAll();
         }
-        lruCache = new LruCache<String, Bitmap>(capacity) {
+        this.mCache = new LruCache<String, Bitmap>(this.capacity) {
             @Override
             protected int sizeOf(String key, Bitmap value) {
-                return value.getRowBytes()*value.getHeight();
+//                return value.getRowBytes()*value.getHeight();
+                return value.getByteCount();
             }
         };
     }
@@ -48,22 +57,29 @@ public class LruMemoryCache implements MemoryCacheAware {
 
 
     @Override
-    public boolean put(Object key, Object value) {
+    public boolean put(String key, Bitmap value) {
+        synchronized (mCache) {
+            if (get(key) == null) {
+                mCache.put(key, value);
+            }
+        }
+
         return false;
     }
 
     @Override
-    public Object get(Object key) {
-        return null;
+    public Bitmap get(String key) {
+        return mCache.get(key);
     }
 
     @Override
-    public void remove(Object key) {
+    public void remove(String key) {
+        mCache.remove(key);
     }
 
     @Override
-    public Collection keys() {
-        return null;
+    public Collection<String> keys() {
+        return mCache.snapshot().keySet();
     }
 
     @Override
