@@ -7,8 +7,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
 import com.nostra13.universalimageloader.core.DefaultConfigurationFactory;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 /**
  * Abstract disc cache limited by some parameter. If cache exceeds specified limit then file with the most oldest last
@@ -59,8 +62,24 @@ public abstract class LimitedDiscCache extends BaseDiscCache {
         cacheSize = size;
     }
 
+//    @Override
+//    public void put(String key, File file) {
+//        int valueSize = getSize(file);
+//        while (cacheSize + valueSize > sizeLimit) {
+//            int freedSize = removeNext();
+//            if (freedSize == 0) break; // cache is empty (have nothing to delete)
+//            cacheSize -= freedSize;
+//        }
+//        cacheSize += valueSize;
+//
+//        Long currentTime = System.currentTimeMillis();
+//        file.setLastModified(currentTime);
+//        lastUsageDates.put(file, currentTime);
+//    }
+
     @Override
-    public void put(String key, File file) {
+    public void put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
+        File file = super.getFile(key);
         int valueSize = getSize(file);
         while (cacheSize + valueSize > sizeLimit) {
             int freedSize = removeNext();
@@ -68,21 +87,23 @@ public abstract class LimitedDiscCache extends BaseDiscCache {
             cacheSize -= freedSize;
         }
         cacheSize += valueSize;
-
+        super.put(key, bitmap, config);
         Long currentTime = System.currentTimeMillis();
         file.setLastModified(currentTime);
         lastUsageDates.put(file, currentTime);
     }
 
     @Override
-    public File get(String key) {
-        File file = super.get(key);
+    public Bitmap get(String key) {
+        File file = super.getFile(key);
 
         Long currentTime = System.currentTimeMillis();
         file.setLastModified(currentTime);
         lastUsageDates.put(file, currentTime);
 
-        return file;
+        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+
+        return bitmap;
     }
 
     @Override

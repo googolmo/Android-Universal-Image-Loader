@@ -1,5 +1,8 @@
 package com.nostra13.universalimageloader.cache.disc;
 
+import android.graphics.Bitmap;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+
 import java.io.File;
 
 /**
@@ -14,14 +17,23 @@ public interface DiscCacheAware {
      * and it was decoded to bitmap in memory. Such order is required to prevent possible deletion of file after it was
      * cached on disc and before it was tried to decode to bitmap.
      */
-    void put(String key, File file);
+//    void put(String key, File file);
+
+    void put(String key, Bitmap bitmap, ImageLoaderConfiguration config);
 
     /**
      * Returns {@linkplain File file object} appropriate incoming key.<br />
      * <b>NOTE:</b> Must <b>not to return</b> a null. Method must return specific {@linkplain File file object} for
      * incoming key whether file exists or not.
      */
-    File get(String key);
+//    File get(String key);
+
+    /**
+     * Returns {@linkplain Bitmap object} appropriate incoming key.<br />
+     * <b>NOTE:</b> Must <b>not to return</b> a null. Method must return specific {@linkplain Bitmap object} for
+     * incoming key whether file exists or not.
+     */
+    Bitmap get(String key);
 
     /**
      * Clears cache directory

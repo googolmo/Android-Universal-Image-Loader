@@ -2,10 +2,12 @@ package com.nostra13.universalimageloader.cache.disc.impl;
 
 import java.io.File;
 
+import android.graphics.Bitmap;
 import com.nostra13.universalimageloader.cache.disc.BaseDiscCache;
 import com.nostra13.universalimageloader.cache.disc.DiscCacheAware;
 import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
 import com.nostra13.universalimageloader.core.DefaultConfigurationFactory;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 /**
  * Default implementation of {@linkplain DiscCacheAware disc cache}. Cache size is unlimited.
@@ -29,8 +31,14 @@ public class UnlimitedDiscCache extends BaseDiscCache {
         super(cacheDir, fileNameGenerator);
     }
 
-    @Override
-    public void put(String key, File file) {
-        // Do nothing
-    }
+//    @Override
+//    public void put(String key, File file) {
+//        // Do nothing
+//    }
+
+//    @Override
+//    public void put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
+//        //Do nothing
+////        super.put(key, bitmap);
+//    }
 }

@@ -36,7 +36,7 @@ public class UILWidgetProvider extends AppWidgetProvider {
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(context).threadPoolSize(3).threadPriority(Thread.NORM_PRIORITY - 2)
                 .memoryCachePercent(20) // 1.5 Mb
                 .denyCacheImageMultipleSizesInMemory(false)
-                .discCacheFileNameGenerator(new Md5FileNameGenerator()).enableLogging() // Not necessary in common
+                .discCacheFileNameGenerator(new Md5FileNameGenerator()).enableLogging(true) // Not necessary in common
                 .build();
         ImageLoader.getInstance().init(config);
 

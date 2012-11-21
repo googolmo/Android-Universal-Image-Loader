@@ -12,11 +12,11 @@ import java.net.URI;
  */
 public abstract class ImageDownloader {
 
-    protected static final String PROTOCOL_FILE = "file";
+    public static final String PROTOCOL_FILE = "file";
 
-    protected static final String PROTOCOL_HTTP = "http";
-    protected static final String PROTOCOL_HTTPS = "https";
-    protected static final String PROTOCOL_FTP = "ftp";
+    public static final String PROTOCOL_HTTP = "http";
+    public static final String PROTOCOL_HTTPS = "https";
+    public static final String PROTOCOL_FTP = "ftp";
 
     /**
      * Retrieves {@link InputStream} of image by URI. Image can be located as in the network and on local file system.

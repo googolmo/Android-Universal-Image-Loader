@@ -26,7 +26,7 @@ public class UILApplication extends Application {
                 .discCacheFileNameGenerator(new Md5FileNameGenerator())
                 .imageDownloader(new ExtendedImageDownloader(getApplicationContext()))
                 .tasksProcessingOrder(QueueProcessingType.LIFO)
-                .enableLogging() // Not necessary in common
+                .enableLogging(true) // Not necessary in common
                 .build();
         // Initialize ImageLoader with configuration.
         ImageLoader.getInstance().init(config);

@@ -21,7 +21,7 @@ import com.nostra13.universalimageloader.core.display.BitmapDisplayer;
  * <ul>
  * <li>with {@link Builder}:<br />
  * <b>i.e.</b> :
- * <code>new {@link DisplayImageOptions}.{@link Builder#Builder() Builder()}.{@link Builder#cacheInMemory() cacheInMemory()}.
+ * <code>new {@link DisplayImageOptions}.{@link Builder Builder()}.{@link Builder#cacheInMemory(boolean)}  cacheInMemory()}.
  * {@link Builder#showStubImage(int) showStubImage()}.{@link Builder#build() build()}</code><br />
  * </li>
  * <li>or by static method: {@link #createSimple()}</li> <br />

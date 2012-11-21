@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
@@ -20,6 +21,7 @@ import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.assist.ViewScaleType;
+import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.nostra13.universalimageloader.utils.FileUtils;
 
 /**
@@ -116,35 +118,51 @@ final class LoadAndDisplayImageTask implements Runnable {
     }
 
     private Bitmap tryLoadBitmap() {
-        File imageFile = configuration.discCache.get(imageLoadingInfo.uri);
-
+//        Log.d(ImageLoader.TAG, "uri = " + imageLoadingInfo.uri);
+        URI imageUriForDecoding = null;
         Bitmap bitmap = null;
         try {
-            // Try to load image from disc cache
-            if (imageFile.exists()) {
-                if (configuration.loggingEnabled)
-                    Log.i(ImageLoader.TAG, String.format(LOG_LOAD_IMAGE_FROM_DISC_CACHE, imageLoadingInfo.memoryCacheKey));
-
-                Bitmap b = decodeImage(imageFile.toURI());
-                if (b != null) {
-                    return b;
+            imageUriForDecoding = new URI(imageLoadingInfo.uri);
+            if (imageUriForDecoding != null && (imageUriForDecoding.getScheme().equalsIgnoreCase("assets")
+                    || imageUriForDecoding.getScheme().equalsIgnoreCase("drawable")
+                    || imageUriForDecoding.getScheme().equalsIgnoreCase("file"))) {
+                bitmap = decodeImage(imageUriForDecoding);
+                if (bitmap != null) {
+                    return bitmap;
                 }
             }
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+        bitmap = configuration.discCache.get(imageLoadingInfo.uri);
+
+
+        if (bitmap != null) {
+            if (configuration.loggingEnabled) {
+                Log.i(ImageLoader.TAG, String.format(LOG_LOAD_IMAGE_FROM_DISC_CACHE, imageLoadingInfo.memoryCacheKey));
+            }
+            return bitmap;
+        }
+
+
+        try {
+
+            imageUriForDecoding = new URI(imageLoadingInfo.uri);
             // Load image from Web
             if (configuration.loggingEnabled)
                 Log.i(ImageLoader.TAG, String.format(LOG_LOAD_IMAGE_FROM_INTERNET, imageLoadingInfo.memoryCacheKey));
 
-            URI imageUriForDecoding;
             if (imageLoadingInfo.options.isCacheOnDisc()) {
-                if (configuration.loggingEnabled)
-                    Log.i(ImageLoader.TAG, String.format(LOG_CACHE_IMAGE_ON_DISC, imageLoadingInfo.memoryCacheKey));
 
-                saveImageOnDisc(imageFile);
-                configuration.discCache.put(imageLoadingInfo.uri, imageFile);
-                imageUriForDecoding = imageFile.toURI();
-            } else {
-                imageUriForDecoding = new URI(imageLoadingInfo.uri);
+                if (configuration.loggingEnabled) {
+                    Log.i(ImageLoader.TAG, String.format(LOG_CACHE_IMAGE_ON_DISC, imageLoadingInfo.memoryCacheKey));
+                }
+                bitmap = getBitmap();
+                configuration.discCache.put(imageLoadingInfo.uri, bitmap, configuration);
+                return bitmap;
             }
 
             bitmap = decodeImage(imageUriForDecoding);
@@ -154,9 +172,6 @@ final class LoadAndDisplayImageTask implements Runnable {
         } catch (IOException e) {
             Log.e(ImageLoader.TAG, e.getMessage(), e);
             fireImageLoadingFailedEvent(FailReason.IO_ERROR);
-            if (imageFile.exists()) {
-                imageFile.delete();
-            }
         } catch (OutOfMemoryError e) {
             Log.e(ImageLoader.TAG, e.getMessage(), e);
             fireImageLoadingFailedEvent(FailReason.OUT_OF_MEMORY);
@@ -243,6 +258,29 @@ final class LoadAndDisplayImageTask implements Runnable {
         } finally {
             is.close();
         }
+    }
+
+    private Bitmap getBitmap() throws IOException, URISyntaxException {
+        int width = configuration.maxImageWidthForDiscCache;
+        int height = configuration.maxImageHeightForDiscCache;
+        Bitmap bmp = null;
+
+        if (width > 0 || height > 0) {
+            // Download, decode, compress and save image
+            ImageSize targetImageSize = new ImageSize(width, height);
+            ImageDecoder decoder = new ImageDecoder(new URI(imageLoadingInfo.uri), configuration.downloader);
+            decoder.setLoggingEnabled(configuration.loggingEnabled);
+            bmp = decoder.decode(targetImageSize, ImageScaleType.IN_SAMPLE_INT, ViewScaleType.FIT_INSIDE);
+        } else {
+            InputStream is = configuration.downloader.getStream(new URI(imageLoadingInfo.uri));
+            try {
+                bmp = BitmapFactory.decodeStream(is);
+            } finally {
+                is.close();
+            }
+//            Log.d(ImageLoader.TAG, "bmp == null is" + (bmp == null));
+        }
+        return bmp;
     }
 
     private void fireImageLoadingFailedEvent(final FailReason failReason) {

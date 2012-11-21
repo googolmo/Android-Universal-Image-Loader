@@ -5,9 +5,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import com.nostra13.universalimageloader.cache.disc.BaseDiscCache;
 import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
 import com.nostra13.universalimageloader.core.DefaultConfigurationFactory;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 /**
  * Cache which deletes files which were loaded more than defined time. Cache size is unlimited.
@@ -49,16 +52,26 @@ public class LimitedAgeDiscCache extends BaseDiscCache {
         }
     }
 
+//    @Override
+//    public void put(String key, File file) {
+//        long currentTime = System.currentTimeMillis();
+//        file.setLastModified(currentTime);
+//        loadingDates.put(file, currentTime);
+//    }
+
     @Override
-    public void put(String key, File file) {
+    public void put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
+        File file = super.getFile(key);
+        super.put(key, bitmap, config);
         long currentTime = System.currentTimeMillis();
         file.setLastModified(currentTime);
         loadingDates.put(file, currentTime);
     }
 
     @Override
-    public File get(String key) {
-        File file = super.get(key);
+    public Bitmap get(String key) {
+        File file = super.getFile(key);
+        Bitmap bitmap = null;
         if (file.exists()) {
             Long loadingDate = loadingDates.get(file);
             if (loadingDate == null) {
@@ -69,6 +82,9 @@ public class LimitedAgeDiscCache extends BaseDiscCache {
                 loadingDates.remove(file);
             }
         }
-        return file;
+//        if (file.exists()) {
+            bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+//        }
+        return bitmap;
     }
 }

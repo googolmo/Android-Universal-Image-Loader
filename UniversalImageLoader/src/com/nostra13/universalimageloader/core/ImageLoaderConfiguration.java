@@ -30,23 +30,23 @@ import com.nostra13.universalimageloader.core.download.ImageDownloader;
  */
 public final class ImageLoaderConfiguration {
 
-    final int maxImageWidthForMemoryCache;
-    final int maxImageHeightForMemoryCache;
-    final int maxImageWidthForDiscCache;
-    final int maxImageHeightForDiscCache;
-    final CompressFormat imageCompressFormatForDiscCache;
-    final int imageQualityForDiscCache;
+    public final int maxImageWidthForMemoryCache;
+    public final int maxImageHeightForMemoryCache;
+    public final int maxImageWidthForDiscCache;
+    public final int maxImageHeightForDiscCache;
+    public final CompressFormat imageCompressFormatForDiscCache;
+    public final int imageQualityForDiscCache;
 
-    final int threadPoolSize;
-    final boolean handleOutOfMemory;
-    final QueueProcessingType tasksProcessingType;
+    public final int threadPoolSize;
+    public final boolean handleOutOfMemory;
+    public final QueueProcessingType tasksProcessingType;
 
-    final MemoryCacheAware<String, Bitmap> memoryCache;
-    final DiscCacheAware discCache;
-    final ImageDownloader downloader;
-    final DisplayImageOptions defaultDisplayImageOptions;
-    final ThreadFactory displayImageThreadFactory;
-    final boolean loggingEnabled;
+    public final MemoryCacheAware<String, Bitmap> memoryCache;
+    public final DiscCacheAware discCache;
+    public final ImageDownloader downloader;
+    public final DisplayImageOptions defaultDisplayImageOptions;
+    public final ThreadFactory displayImageThreadFactory;
+    public final boolean loggingEnabled;
 
 
     private ImageLoaderConfiguration(final Builder builder) {
@@ -116,7 +116,7 @@ public final class ImageLoaderConfiguration {
         /**
          * {@value}
          */
-        public static final int DEFAULT_THREAD_POOL_SIZE = 3;
+        public static final int DEFAULT_THREAD_POOL_SIZE = 4;
         /**
          * {@value}
          */
@@ -126,14 +126,19 @@ public final class ImageLoaderConfiguration {
          */
         public static final int DEFAULT_MEMORY_CACHE_PERCENT = 25; // 百分比
 
+        /**
+         * {@value}
+         */
+        public static final int DEFAULT_IMAGE_QUALITY = 100;
+
         private Context context;
 
         private int maxImageWidthForMemoryCache = 0;
         private int maxImageHeightForMemoryCache = 0;
         private int maxImageWidthForDiscCache = 0;
         private int maxImageHeightForDiscCache = 0;
-        private CompressFormat imageCompressFormatForDiscCache = null;
-        private int imageQualityForDiscCache = 0;
+        private CompressFormat imageCompressFormatForDiscCache = CompressFormat.WEBP;
+        private int imageQualityForDiscCache = DEFAULT_IMAGE_QUALITY;
 
         private int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
         private int threadPriority = DEFAULT_THREAD_PRIORITY;
@@ -371,8 +376,8 @@ public final class ImageLoaderConfiguration {
         /**
          * Enabled detail logging of {@link ImageLoader} work
          */
-        public Builder enableLogging() {
-            this.loggingEnabled = true;
+        public Builder enableLogging(boolean value) {
+            this.loggingEnabled = value;
             return this;
         }
 
