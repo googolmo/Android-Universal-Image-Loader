@@ -2,6 +2,7 @@ package com.nostra13.universalimageloader.core;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;

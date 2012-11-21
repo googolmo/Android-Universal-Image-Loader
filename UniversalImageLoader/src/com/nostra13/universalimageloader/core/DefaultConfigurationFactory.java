@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 
 import com.nostra13.universalimageloader.cache.disc.DiscCacheAware;
 import com.nostra13.universalimageloader.cache.disc.impl.FileCountLimitedDiscCache;
+import com.nostra13.universalimageloader.cache.disc.impl.LruDiskCache;
 import com.nostra13.universalimageloader.cache.disc.impl.TotalSizeLimitedDiscCache;
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiscCache;
 import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
@@ -39,15 +40,19 @@ public class DefaultConfigurationFactory {
      * Create default implementation of {@link DiscCacheAware} depends on incoming parameters
      */
     public static DiscCacheAware createDiscCache(Context context, FileNameGenerator discCacheFileNameGenerator, int discCacheSize, int discCacheFileCount) {
-        if (discCacheSize > 0) {
+        if (discCacheSize > 0 && discCacheFileCount <= 0) {
             File individualCacheDir = StorageUtils.getIndividualCacheDirectory(context);
             return new TotalSizeLimitedDiscCache(individualCacheDir, discCacheFileNameGenerator, discCacheSize);
-        } else if (discCacheFileCount > 0) {
+        } else if (discCacheFileCount > 0 && discCacheSize <= 0) {
             File individualCacheDir = StorageUtils.getIndividualCacheDirectory(context);
             return new FileCountLimitedDiscCache(individualCacheDir, discCacheFileNameGenerator, discCacheFileCount);
+        } else if (discCacheFileCount > 0 && discCacheSize > 0){
+            File cacheDir = StorageUtils.getCacheDirectory(context);
+            return new LruDiskCache(cacheDir, discCacheSize, discCacheFileNameGenerator);
         } else {
             File cacheDir = StorageUtils.getCacheDirectory(context);
-            return new UnlimitedDiscCache(cacheDir, discCacheFileNameGenerator);
+            return new LruDiskCache(cacheDir, discCacheFileNameGenerator);
+//            return new UnlimitedDiscCache(cacheDir, discCacheFileNameGenerator);
         }
     }
 

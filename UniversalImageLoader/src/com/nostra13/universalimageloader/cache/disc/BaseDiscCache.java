@@ -63,6 +63,16 @@ public abstract class BaseDiscCache implements DiscCacheAware {
     }
 
     @Override
+    public boolean delete(String key) {
+        String fileName = fileNameGenerator.generate(key);
+        File f = new File(cacheDir, fileName);
+        if (f.exists()) {
+            return f.delete();
+        }
+        return false;
+    }
+
+    @Override
     public void put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
         File file = getFile(key);
         if (file.exists()) {

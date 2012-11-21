@@ -3,8 +3,8 @@ package com.nostra13.universalimageloader.cache.memory.impl;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.support.v4.util.LruCache;
 import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
-import com.nostra13.universalimageloader.utils.LruCache;
 
 import java.util.Collection;
 
@@ -48,8 +48,8 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
         this.mCache = new LruCache<String, Bitmap>(this.capacity) {
             @Override
             protected int sizeOf(String key, Bitmap value) {
-//                return value.getRowBytes()*value.getHeight();
-                return value.getByteCount();
+                return value.getRowBytes()*value.getHeight();
+//                return value.getByteCount();
             }
         };
     }
@@ -58,11 +58,16 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 
     @Override
     public boolean put(String key, Bitmap value) {
-        synchronized (mCache) {
+//        synchronized (mCache) {
             if (get(key) == null) {
-                mCache.put(key, value);
+                Bitmap b = mCache.put(key, value);
+                if (b != null) {
+                    b.recycle();
+                    return true;
+                }
             }
-        }
+//        }
+
 
         return false;
     }

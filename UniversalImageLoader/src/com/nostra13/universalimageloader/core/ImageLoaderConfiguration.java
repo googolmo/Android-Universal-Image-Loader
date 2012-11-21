@@ -137,7 +137,7 @@ public final class ImageLoaderConfiguration {
         private int maxImageHeightForMemoryCache = 0;
         private int maxImageWidthForDiscCache = 0;
         private int maxImageHeightForDiscCache = 0;
-        private CompressFormat imageCompressFormatForDiscCache = CompressFormat.WEBP;
+        private CompressFormat imageCompressFormatForDiscCache = CompressFormat.JPEG;
         private int imageQualityForDiscCache = DEFAULT_IMAGE_QUALITY;
 
         private int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;

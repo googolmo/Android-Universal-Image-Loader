@@ -65,11 +65,12 @@ final class LoadAndDisplayImageTask implements Runnable {
         }
 
         imageLoadingInfo.loadFromUriLock.lock();
-        Bitmap bmp;
+//        Bitmap bmp;
+        Bitmap bmp = ImageLoader.getInstance().getMemoryCache().get(imageLoadingInfo.memoryCacheKey);
         try {
             if (checkTaskIsNotActual()) return;
 
-            bmp = ImageLoader.getInstance().getMemoryCache().get(imageLoadingInfo.memoryCacheKey);
+
             if (bmp == null) {
                 bmp = tryLoadBitmap();
                 if (bmp == null) return;
@@ -80,6 +81,7 @@ final class LoadAndDisplayImageTask implements Runnable {
                         Log.i(ImageLoader.TAG, String.format(LOG_CACHE_IMAGE_IN_MEMORY, imageLoadingInfo.memoryCacheKey));
 
                     configuration.memoryCache.put(imageLoadingInfo.memoryCacheKey, bmp);
+
                 }
             } else {
                 if (configuration.loggingEnabled)

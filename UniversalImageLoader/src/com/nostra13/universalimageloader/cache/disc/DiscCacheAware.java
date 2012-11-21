@@ -39,4 +39,10 @@ public interface DiscCacheAware {
      * Clears cache directory
      */
     void clear();
+
+    /**
+     * 删除某个文件
+     * @param key
+     */
+    boolean delete(String key);
 }
