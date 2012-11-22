@@ -62,7 +62,7 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
             if (get(key) == null) {
                 Bitmap b = mCache.put(key, value);
                 if (b != null) {
-                    b.recycle();
+//                    b.recycle();
                     return true;
                 }
             }

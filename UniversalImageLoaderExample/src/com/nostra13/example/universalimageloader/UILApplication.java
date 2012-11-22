@@ -22,7 +22,7 @@ public class UILApplication extends Application {
         // method.
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
                 .threadPriority(Thread.NORM_PRIORITY - 2)
-                .memoryCachePercent(50) // 2 Mb
+                .memoryCachePercent(25) // 2 Mb
                 .discCacheFileNameGenerator(new Md5FileNameGenerator())
                 .imageDownloader(new ExtendedImageDownloader(getApplicationContext()))
                 .tasksProcessingOrder(QueueProcessingType.LIFO)
