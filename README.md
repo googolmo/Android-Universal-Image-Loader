@@ -55,8 +55,8 @@ imageLoader.displayImage(imageUrl, imageView);<br/>
 
 ### Most detailed
 ``` java
-ImageView imageView = ... <br/>
-String imageUrl = "http://site.com/image.png"; // or "file:///mnt/sdcard/images/image.jpg"<br/>
+ImageView imageView = ...
+String imageUrl = "http://site.com/image.png"; // or "file:///mnt/sdcard/images/image.jpg"
 ProgressBar spinner = ...<br/>
 File cacheDir = StorageUtils.getOwnCacheDirectory(getApplicationContext(), "UniversalImageLoader/Cache"); <br/>
  <br/>
