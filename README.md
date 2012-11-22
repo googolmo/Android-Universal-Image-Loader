@@ -4,7 +4,7 @@ This project aims to provide a reusable instrument for asynchronous image loadin
 
 **Download:** [JAR library](https://github.com/nostra13/Android-Universal-Image-Loader/downloads); [sources](https://github.com/nostra13/Android-Universal-Image-Loader/downloads) (you can attach it to project as _source attachment_ so you can see Java docs)
 
-![Screenshot](http://code.dapps.douban.com/universalimageloader/raw/master/UniversalImageLoader.png)
+![Screenshot](https://github.com/nostra13/Android-Universal-Image-Loader/raw/master/UniversalImageLoader.png)
 
 ## Features
  * Multithread image loading
@@ -70,15 +70,15 @@ ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplic
 			.discCacheExtraOptions(480, 800, CompressFormat.JPEG, 75) // Can slow ImageLoader, use it carefully (Better don't use it)
 			.threadPoolSize(3)
 			.threadPriority(Thread.NORM_PRIORITY - 1)
-			.denyCacheImageMultipleSizesInMemory()
-			.offOutOfMemoryHandling()
+			.denyCacheImageMultipleSizesInMemory(false)
+			.offOutOfMemoryHandling(true)
 			.memoryCache(new UsingFreqLimitedMemoryCache(2 * 1024 * 1024)) // You can pass your own memory cache implementation
 			.discCache(new UnlimitedDiscCache(cacheDir)) // You can pass your own disc cache implementation
 			.discCacheFileNameGenerator(new HashCodeFileNameGenerator())
 			.imageDownloader(new URLConnectionImageDownloader(5 * 1000, 20 * 1000)) // connectTimeout (5 s), readTimeout (20 s)
 			.tasksProcessingOrder(QueueProcessingType.FIFO)
 			.defaultDisplayImageOptions(DisplayImageOptions.createSimple()) 
-			.enableLogging()
+			.enableLogging(true)
 			.build(); 
 // Initialize ImageLoader with created configuration. Do it once on Application start.
 imageLoader.init(config);
@@ -88,8 +88,8 @@ imageLoader.init(config);
 DisplayImageOptions options = new DisplayImageOptions.Builder() 
            .showStubImage(R.drawable.stub_image) 
 		   .showImageForEmptyUri(R.drawable.image_for_empty_url)
-           .cacheInMemory()
-           .cacheOnDisc()
+           .cacheInMemory(true)
+           .cacheOnDisc(true)
 		   .imageScaleType(ImageScaleType.IN_SAMPLE_POWER_OF_2) 
 		   .bitmapConfig(Bitmap.Config.ARGB_8888)
 		   .delayBeforeLoading(1000)
@@ -139,8 +139,8 @@ imageLoader.loadImage(context, imageUrl, minImageSize, options, new SimpleImageL
 //  displayImage(...) call if no options will be passed to this method
 DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder() 
 			...       
-            .cacheInMemory()  
-            .cacheOnDisc()
+            .cacheInMemory(true)
+            .cacheOnDisc(true)
             ... 
             .build();
 ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
@@ -158,8 +158,8 @@ or this way:
 ``` java
 DisplayImageOptions options = new DisplayImageOptions.Builder()
 			...                                                     
-            .cacheInMemory()
-            .cacheOnDisc()
+            .cacheInMemory(true)
+            .cacheOnDisc(true)
             ...
             .build();
 ImageLoader.getInstance().displayImage(imageUrl, imageView, options); // Incoming options will be used
