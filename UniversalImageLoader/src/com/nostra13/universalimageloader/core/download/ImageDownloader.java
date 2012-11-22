@@ -12,15 +12,15 @@ import java.net.URI;
  */
 public abstract class ImageDownloader {
 
-    public static final String PROTOCOL_FILE = "file";
+    protected static final String PROTOCOL_FILE = "file";
 
-    public static final String PROTOCOL_HTTP = "http";
-    public static final String PROTOCOL_HTTPS = "https";
-    public static final String PROTOCOL_FTP = "ftp";
+    protected static final String PROTOCOL_HTTP = "http";
+    protected static final String PROTOCOL_HTTPS = "https";
+    protected static final String PROTOCOL_FTP = "ftp";
 
-    /**
-     * Retrieves {@link InputStream} of image by URI. Image can be located as in the network and on local file system.
-     */
+    protected static final int BUFFER_SIZE = 8 * 1024; // 8 Kb
+
+    /** Retrieves {@link InputStream} of image by URI. Image can be located as in the network and on local file system. */
     public InputStream getStream(URI imageUri) throws IOException {
         String scheme = imageUri.getScheme();
         if (PROTOCOL_HTTP.equals(scheme) || PROTOCOL_HTTPS.equals(scheme) || PROTOCOL_FTP.equals(scheme)) {
@@ -40,15 +40,11 @@ public abstract class ImageDownloader {
         return null;
     }
 
-    /**
-     * Retrieves {@link InputStream} of image by URI (image is located in the network)
-     */
+    /** Retrieves {@link InputStream} of image by URI (image is located in the network) */
     protected abstract InputStream getStreamFromNetwork(URI imageUri) throws IOException;
 
-    /**
-     * Retrieves {@link InputStream} of image by URI (image is located on the local file system or SD card)
-     */
+    /** Retrieves {@link InputStream} of image by URI (image is located on the local file system or SD card) */
     protected InputStream getStreamFromFile(URI imageUri) throws IOException {
-        return new BufferedInputStream(imageUri.toURL().openStream());
+        return new BufferedInputStream(imageUri.toURL().openStream(), BUFFER_SIZE);
     }
 }

@@ -2,7 +2,6 @@ package com.nostra13.universalimageloader.core;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
@@ -58,9 +57,7 @@ public class ImageLoader {
 
     private volatile static ImageLoader instance;
 
-    /**
-     * Returns singletone class instance
-     */
+    /** Returns singletone class instance */
     public static ImageLoader getInstance() {
         if (instance == null) {
             synchronized (ImageLoader.class) {
@@ -79,8 +76,10 @@ public class ImageLoader {
      * Initializes ImageLoader's singletone instance with configuration. Method shoiuld be called <b>once</b> (each
      * following call will have no effect)<br />
      *
-     * @param configuration {@linkplain ImageLoaderConfiguration ImageLoader configuration}
-     * @throws IllegalArgumentException if <b>configuration</b> parameter is null
+     * @param configuration
+     *            {@linkplain ImageLoaderConfiguration ImageLoader configuration}
+     * @throws IllegalArgumentException
+     *             if <b>configuration</b> parameter is null
      */
     public synchronized void init(ImageLoaderConfiguration configuration) {
         if (configuration == null) {
@@ -99,9 +98,12 @@ public class ImageLoader {
      * configuration} will be used.<br />
      * <b>NOTE:</b> {@link #init(ImageLoaderConfiguration)} method must be called before this method call
      *
-     * @param uri       Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param imageView {@link ImageView} which should display image
-     * @throws RuntimeException if {@link #init(ImageLoaderConfiguration)} method wasn't called before
+     * @param uri
+     *            Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param imageView
+     *            {@link ImageView} which should display image
+     * @throws RuntimeException
+     *             if {@link #init(ImageLoaderConfiguration)} method wasn't called before
      */
     public void displayImage(String uri, ImageView imageView) {
         displayImage(uri, imageView, null, null);
@@ -111,13 +113,17 @@ public class ImageLoader {
      * Adds display image task to execution pool. Image will be set to ImageView when it's turn.<br />
      * <b>NOTE:</b> {@link #init(ImageLoaderConfiguration)} method must be called before this method call
      *
-     * @param uri       Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param imageView {@link ImageView} which should display image
-     * @param options   {@linkplain DisplayImageOptions Display image options} for image displaying. If <b>null</b> - default
-     *                  display image options
-     *                  {@linkplain ImageLoaderConfiguration.Builder#defaultDisplayImageOptions(DisplayImageOptions) from
-     *                  configuration} will be used.
-     * @throws RuntimeException if {@link #init(ImageLoaderConfiguration)} method wasn't called before
+     * @param uri
+     *            Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param imageView
+     *            {@link ImageView} which should display image
+     * @param options
+     *            {@linkplain DisplayImageOptions Display image options} for image displaying. If <b>null</b> - default
+     *            display image options
+     *            {@linkplain ImageLoaderConfiguration.Builder#defaultDisplayImageOptions(DisplayImageOptions) from
+     *            configuration} will be used.
+     * @throws RuntimeException
+     *             if {@link #init(ImageLoaderConfiguration)} method wasn't called before
      */
     public void displayImage(String uri, ImageView imageView, DisplayImageOptions options) {
         displayImage(uri, imageView, options, null);
@@ -129,11 +135,15 @@ public class ImageLoader {
      * configuration} will be used.<br />
      * <b>NOTE:</b> {@link #init(ImageLoaderConfiguration)} method must be called before this method call
      *
-     * @param uri       Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param imageView {@link ImageView} which should display image
-     * @param listener  {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
-     *                  thread.
-     * @throws RuntimeException if {@link #init(ImageLoaderConfiguration)} method wasn't called before
+     * @param uri
+     *            Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param imageView
+     *            {@link ImageView} which should display image
+     * @param listener
+     *            {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
+     *            thread.
+     * @throws RuntimeException
+     *             if {@link #init(ImageLoaderConfiguration)} method wasn't called before
      */
     public void displayImage(String uri, ImageView imageView, ImageLoadingListener listener) {
         displayImage(uri, imageView, null, listener);
@@ -143,15 +153,20 @@ public class ImageLoader {
      * Adds display image task to execution pool. Image will be set to ImageView when it's turn.<br />
      * <b>NOTE:</b> {@link #init(ImageLoaderConfiguration)} method must be called before this method call
      *
-     * @param uri       Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param imageView {@link ImageView} which should display image
-     * @param options   {@linkplain DisplayImageOptions Display image options} for image displaying. If <b>null</b> - default
-     *                  display image options
-     *                  {@linkplain ImageLoaderConfiguration.Builder#defaultDisplayImageOptions(DisplayImageOptions) from
-     *                  configuration} will be used.
-     * @param listener  {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
-     *                  thread.
-     * @throws RuntimeException if {@link #init(ImageLoaderConfiguration)} method wasn't called before
+     * @param uri
+     *            Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param imageView
+     *            {@link ImageView} which should display image
+     * @param options
+     *            {@linkplain DisplayImageOptions Display image options} for image displaying. If <b>null</b> - default
+     *            display image options
+     *            {@linkplain ImageLoaderConfiguration.Builder#defaultDisplayImageOptions(DisplayImageOptions) from
+     *            configuration} will be used.
+     * @param listener
+     *            {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
+     *            thread.
+     * @throws RuntimeException
+     *             if {@link #init(ImageLoaderConfiguration)} method wasn't called before
      */
     public void displayImage(String uri, ImageView imageView, DisplayImageOptions options, ImageLoadingListener listener) {
         if (configuration == null) {
@@ -186,8 +201,7 @@ public class ImageLoader {
 
         Bitmap bmp = configuration.memoryCache.get(memoryCacheKey);
         if (bmp != null && !bmp.isRecycled()) {
-            if (configuration.loggingEnabled)
-                Log.i(TAG, String.format(LOG_LOAD_IMAGE_FROM_MEMORY_CACHE, memoryCacheKey));
+            if (configuration.loggingEnabled) Log.i(TAG, String.format(LOG_LOAD_IMAGE_FROM_MEMORY_CACHE, memoryCacheKey));
             listener.onLoadingStarted();
             options.getDisplayer().display(bmp, imageView);
             listener.onLoadingComplete(bmp);
@@ -219,10 +233,13 @@ public class ImageLoader {
      * {@link ImageLoadingListener#onLoadingComplete(Bitmap) callback}.<br />
      * <b>NOTE:</b> {@link #init(ImageLoaderConfiguration)} method must be called before this method call
      *
-     * @param context  Application context (used for creation of fake {@link ImageView})
-     * @param uri      Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param listener {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
-     *                 thread.
+     * @param context
+     *            Application context (used for creation of fake {@link ImageView})
+     * @param uri
+     *            Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param listener
+     *            {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
+     *            thread.
      */
     public void loadImage(Context context, String uri, ImageLoadingListener listener) {
         loadImage(context, uri, null, null, listener);
@@ -233,14 +250,18 @@ public class ImageLoader {
      * {@link ImageLoadingListener#onLoadingComplete(Bitmap) callback}.<br />
      * <b>NOTE:</b> {@link #init(ImageLoaderConfiguration)} method must be called before this method call
      *
-     * @param context      Application context (used for creation of fake {@link ImageView})
-     * @param uri          Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param minImageSize Minimal size for {@link Bitmap} which will be returned in
-     *                     {@linkplain ImageLoadingListener#onLoadingComplete(Bitmap) callback}. Downloaded image will be decoded
-     *                     and scaled to {@link Bitmap} of the size which is <b>equal or larger</b> (usually a bit larger) than
-     *                     incoming minImageSize .
-     * @param listener     {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
-     *                     thread.
+     * @param context
+     *            Application context (used for creation of fake {@link ImageView})
+     * @param uri
+     *            Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param minImageSize
+     *            Minimal size for {@link Bitmap} which will be returned in
+     *            {@linkplain ImageLoadingListener#onLoadingComplete(Bitmap) callback}. Downloaded image will be decoded
+     *            and scaled to {@link Bitmap} of the size which is <b>equal or larger</b> (usually a bit larger) than
+     *            incoming minImageSize .
+     * @param listener
+     *            {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
+     *            thread.
      */
     public void loadImage(Context context, String uri, ImageSize minImageSize, ImageLoadingListener listener) {
         loadImage(context, uri, minImageSize, null, listener);
@@ -251,15 +272,19 @@ public class ImageLoader {
      * {@link ImageLoadingListener#onLoadingComplete(Bitmap) callback}.<br />
      * <b>NOTE:</b> {@link #init(ImageLoaderConfiguration)} method must be called before this method call
      *
-     * @param context  Application context (used for creation of fake {@link ImageView})
-     * @param uri      Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param options  {@linkplain DisplayImageOptions Display image options} for image displaying. If <b>null</b> - default
-     *                 display image options
-     *                 {@linkplain ImageLoaderConfiguration.Builder#defaultDisplayImageOptions(DisplayImageOptions) from
-     *                 configuration} will be used.<br />
-     *                 Incoming options should contain {@link FakeBitmapDisplayer} as displayer.
-     * @param listener {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
-     *                 thread.
+     * @param context
+     *            Application context (used for creation of fake {@link ImageView})
+     * @param uri
+     *            Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param options
+     *            {@linkplain DisplayImageOptions Display image options} for image displaying. If <b>null</b> - default
+     *            display image options
+     *            {@linkplain ImageLoaderConfiguration.Builder#defaultDisplayImageOptions(DisplayImageOptions) from
+     *            configuration} will be used.<br />
+     *            Incoming options should contain {@link FakeBitmapDisplayer} as displayer.
+     * @param listener
+     *            {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
+     *            thread.
      */
     public void loadImage(Context context, String uri, DisplayImageOptions options, ImageLoadingListener listener) {
         loadImage(context, uri, null, options, listener);
@@ -270,19 +295,24 @@ public class ImageLoader {
      * {@link ImageLoadingListener#onLoadingComplete(Bitmap) callback}.<br />
      * <b>NOTE:</b> {@link #init(ImageLoaderConfiguration)} method must be called before this method call
      *
-     * @param context      Application context (used for creation of fake {@link ImageView})
-     * @param uri          Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param minImageSize Minimal size for {@link Bitmap} which will be returned in
-     *                     {@linkplain ImageLoadingListener#onLoadingComplete(Bitmap) callback}. Downloaded image will be decoded
-     *                     and scaled to {@link Bitmap} of the size which is <b>equal or larger</b> (usually a bit larger) than
-     *                     incoming minImageSize .
-     * @param options      {@linkplain DisplayImageOptions Display image options} for image displaying. If <b>null</b> - default
-     *                     display image options
-     *                     {@linkplain ImageLoaderConfiguration.Builder#defaultDisplayImageOptions(DisplayImageOptions) from
-     *                     configuration} will be used.<br />
-     *                     Incoming options should contain {@link FakeBitmapDisplayer} as displayer.
-     * @param listener     {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
-     *                     thread.
+     * @param context
+     *            Application context (used for creation of fake {@link ImageView})
+     * @param uri
+     *            Image URI (i.e. "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param minImageSize
+     *            Minimal size for {@link Bitmap} which will be returned in
+     *            {@linkplain ImageLoadingListener#onLoadingComplete(Bitmap) callback}. Downloaded image will be decoded
+     *            and scaled to {@link Bitmap} of the size which is <b>equal or larger</b> (usually a bit larger) than
+     *            incoming minImageSize .
+     * @param options
+     *            {@linkplain DisplayImageOptions Display image options} for image displaying. If <b>null</b> - default
+     *            display image options
+     *            {@linkplain ImageLoaderConfiguration.Builder#defaultDisplayImageOptions(DisplayImageOptions) from
+     *            configuration} will be used.<br />
+     *            Incoming options should contain {@link FakeBitmapDisplayer} as displayer.
+     * @param listener
+     *            {@linkplain ImageLoadingListener Listener} for image loading process. Listener fires events on UI
+     *            thread.
      */
     public void loadImage(Context context, String uri, ImageSize minImageSize, DisplayImageOptions options, ImageLoadingListener listener) {
         if (minImageSize == null) {
@@ -296,15 +326,10 @@ public class ImageLoader {
         if (options.getDisplayer() instanceof FakeBitmapDisplayer) {
             optionsWithFakeDisplayer = options;
         } else {
-            DisplayImageOptions.Builder newOptionsBuilder = new DisplayImageOptions.Builder();
-            if (options.isCacheInMemory()) newOptionsBuilder.cacheInMemory(true);
-            if (options.isCacheOnDisc()) newOptionsBuilder.cacheOnDisc(true);
-            if (options.isResetViewBeforeLoading()) newOptionsBuilder.resetViewBeforeLoading(true);
-            if (options.isShowImageForEmptyUri()) newOptionsBuilder.showImageForEmptyUri(options.getImageForEmptyUri());
-            if (options.isShowStubImage()) newOptionsBuilder.showStubImage(options.getStubImage());
-            newOptionsBuilder.imageScaleType(options.getImageScaleType());
-            newOptionsBuilder.displayer(fakeBitmapDisplayer);
-            optionsWithFakeDisplayer = newOptionsBuilder.build();
+            optionsWithFakeDisplayer = new DisplayImageOptions.Builder()
+                    .cloneFrom(options)
+                    .displayer(fakeBitmapDisplayer)
+                    .build();
         }
 
         ImageView fakeImage = new ImageView(context);
@@ -330,9 +355,7 @@ public class ImageLoader {
                 configuration.displayImageThreadFactory);
     }
 
-    /**
-     * Returns memory cache
-     */
+    /** Returns memory cache */
     public MemoryCacheAware<String, Bitmap> getMemoryCache() {
         return configuration.memoryCache;
     }
@@ -347,9 +370,7 @@ public class ImageLoader {
         }
     }
 
-    /**
-     * Returns disc cache
-     */
+    /** Returns disc cache */
     public DiscCacheAware getDiscCache() {
         return configuration.discCache;
     }
@@ -364,9 +385,7 @@ public class ImageLoader {
         }
     }
 
-    /**
-     * Returns URI of image which is loading at this moment into passed {@link ImageView}
-     */
+    /** Returns URI of image which is loading at this moment into passed {@link ImageView} */
     public String getLoadingUriForView(ImageView imageView) {
         return cacheKeysForImageViews.get(imageView);
     }
@@ -374,15 +393,14 @@ public class ImageLoader {
     /**
      * Cancel the task of loading and displaying image for passed {@link ImageView}.
      *
-     * @param imageView {@link ImageView} for which display task will be cancelled
+     * @param imageView
+     *            {@link ImageView} for which display task will be cancelled
      */
     public void cancelDisplayTask(ImageView imageView) {
         cacheKeysForImageViews.remove(imageView);
     }
 
-    /**
-     * Stops all running display image tasks, discards all other scheduled tasks
-     */
+    /** Stops all running display image tasks, discards all other scheduled tasks */
     public void stop() {
         if (imageLoadingExecutor != null) {
             imageLoadingExecutor.shutdownNow();

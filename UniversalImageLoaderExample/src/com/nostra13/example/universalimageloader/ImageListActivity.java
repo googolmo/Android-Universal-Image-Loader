@@ -1,5 +1,4 @@
 package com.nostra13.example.universalimageloader;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -13,6 +12,7 @@ import android.widget.TextView;
 
 import com.nostra13.example.universalimageloader.Constants.Extra;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.assist.OnScrollSmartOptions;
 import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
 
 /**
@@ -20,9 +20,9 @@ import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
  */
 public class ImageListActivity extends BaseActivity {
 
-    private String[] imageUrls;
+    String[] imageUrls;
 
-    private DisplayImageOptions options;
+    OnScrollSmartOptions smartOptions;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -32,13 +32,14 @@ public class ImageListActivity extends BaseActivity {
         Bundle bundle = getIntent().getExtras();
         imageUrls = bundle.getStringArray(Extra.IMAGES);
 
-        options = new DisplayImageOptions.Builder()
+        DisplayImageOptions options = new DisplayImageOptions.Builder()
                 .showStubImage(R.drawable.stub_image)
                 .showImageForEmptyUri(R.drawable.image_for_empty_url)
                 .cacheInMemory(true)
                 .cacheOnDisc(true)
                 .displayer(new RoundedBitmapDisplayer(20))
                 .build();
+        smartOptions = new OnScrollSmartOptions(options);
 
         ListView listView = (ListView) findViewById(android.R.id.list);
         listView.setAdapter(new ItemAdapter());
@@ -48,6 +49,8 @@ public class ImageListActivity extends BaseActivity {
                 startImageGalleryActivity(position);
             }
         });
+
+        listView.setOnScrollListener(smartOptions);
     }
 
     private void startImageGalleryActivity(int position) {
@@ -94,7 +97,7 @@ public class ImageListActivity extends BaseActivity {
 
             holder.text.setText("Item " + position);
 
-            imageLoader.displayImage(imageUrls[position], holder.image, options);
+            imageLoader.displayImage(imageUrls[position], holder.image, smartOptions.getOptions());
 
             return view;
         }

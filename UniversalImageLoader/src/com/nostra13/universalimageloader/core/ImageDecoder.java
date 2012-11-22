@@ -7,20 +7,22 @@ import java.net.URI;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
-import android.util.Log;
 
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.assist.ViewScaleType;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
+import com.nostra13.universalimageloader.utils.L;
 
 /**
  * Decodes images to {@link Bitmap}, scales them to needed size
  *
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
+ *
  * @see ImageScaleType
  * @see ViewScaleType
  * @see ImageDownloader
+ * @see DisplayImageOptions
  */
 class ImageDecoder {
 
@@ -29,24 +31,32 @@ class ImageDecoder {
 
     private final URI imageUri;
     private final ImageDownloader imageDownloader;
+    private final DisplayImageOptions displayOptions;
 
     private boolean loggingEnabled;
 
     /**
-     * @param imageUri        Image URI (<b>i.e.:</b> "http://site.com/image.png", "file:///mnt/sdcard/image.png")
-     * @param imageDownloader Image downloader
+     * @param imageUri
+     *            Image URI (<b>i.e.:</b> "http://site.com/image.png", "file:///mnt/sdcard/image.png")
+     * @param imageDownloader
+     *            Image downloader
+     *
      */
-    ImageDecoder(URI imageUri, ImageDownloader imageDownloader) {
+    ImageDecoder(URI imageUri, ImageDownloader imageDownloader, DisplayImageOptions options) {
         this.imageUri = imageUri;
         this.imageDownloader = imageDownloader;
+        this.displayOptions = options;
     }
 
     /**
      * Decodes image from URI into {@link Bitmap}. Image is scaled close to incoming {@link ImageSize image size} during
      * decoding (depend on incoming image scale type).
      *
-     * @param targetSize Image size to scale to during decoding
-     * @param scaleType  {@link ImageScaleType Image scale type}
+     * @param targetSize
+     *            Image size to scale to during decoding
+     * @param scaleType
+     *            {@link ImageScaleType Image scale type}
+     *
      * @return Decoded bitmap
      * @throws IOException
      */
@@ -58,9 +68,13 @@ class ImageDecoder {
      * Decodes image from URI into {@link Bitmap}. Image is scaled close to incoming {@link ImageSize image size} during
      * decoding (depend on incoming image scale type).
      *
-     * @param targetSize    Image size to scale to during decoding
-     * @param scaleType     {@link ImageScaleType Image scale type}
-     * @param viewScaleType {@link ViewScaleType View scale type}
+     * @param targetSize
+     *            Image size to scale to during decoding
+     * @param scaleType
+     *            {@link ImageScaleType Image scale type}
+     * @param viewScaleType
+     *            {@link ViewScaleType View scale type}
+     *
      * @return Decoded bitmap
      * @throws IOException
      */
@@ -86,9 +100,10 @@ class ImageDecoder {
     }
 
     private Options getBitmapOptionsForImageDecoding(ImageSize targetSize, ImageScaleType scaleType, ViewScaleType viewScaleType) throws IOException {
-        Options options = new Options();
-        options.inSampleSize = computeImageScale(targetSize, scaleType, viewScaleType);
-        return options;
+        Options decodeOptions = new Options();
+        decodeOptions.inSampleSize = computeImageScale(targetSize, scaleType, viewScaleType);
+        decodeOptions.inPreferredConfig = displayOptions.getBitmapConfig();
+        return decodeOptions;
     }
 
     @SuppressWarnings("deprecation")
@@ -138,8 +153,7 @@ class ImageDecoder {
             scale = 1;
         }
 
-        if (loggingEnabled)
-            Log.d(ImageLoader.TAG, String.format(LOG_IMAGE_SUBSAMPLED, imageWidth, imageHeight, targetWidth, targetHeight, scale));
+        if (loggingEnabled) L.d(LOG_IMAGE_SUBSAMPLED, imageWidth, imageHeight, targetWidth, targetHeight, scale);
         return scale;
     }
 
@@ -164,9 +178,10 @@ class ImageDecoder {
         if ((scaleType == ImageScaleType.EXACTLY && destWidth < srcWidth && destHeight < srcHeight)
                 || (scaleType == ImageScaleType.EXACTLY_STRETCHED && destWidth != srcWidth && destHeight != srcHeight)) {
             scaledBitmap = Bitmap.createScaledBitmap(subsampledBitmap, destWidth, destHeight, true);
-            subsampledBitmap.recycle();
-            if (loggingEnabled)
-                Log.d(ImageLoader.TAG, String.format(LOG_IMAGE_SCALED, (int) srcWidth, (int) srcHeight, destWidth, destHeight));
+            if (scaledBitmap != subsampledBitmap) {
+                subsampledBitmap.recycle();
+            }
+            if (loggingEnabled) L.d(LOG_IMAGE_SCALED, (int) srcWidth, (int) srcHeight, destWidth, destHeight);
         } else {
             scaledBitmap = subsampledBitmap;
         }
