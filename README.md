@@ -42,15 +42,15 @@ Mention next information in your question/problem:
 ### Simple
 
 ``` java
-ImageView imageView = ...<br/>
-String imageUrl = "http://site.com/image.png"; // or "file:///mnt/sdcard/images/image.jpg"<br/>
-<br/>
-// Get singletone instance of ImageLoader<br/>
-ImageLoader imageLoader = ImageLoader.getInstance();<br/>
-// Initialize ImageLoader with configuration. Do it once. <br/>
-imageLoader.init(ImageLoaderConfiguration.createDefault(context)); <br/>
-// Load and display image asynchronously <br/>
-imageLoader.displayImage(imageUrl, imageView);<br/>
+ImageView imageView = ...
+String imageUrl = "http://site.com/image.png"; // or "file:///mnt/sdcard/images/image.jpg"
+
+// Get singletone instance of ImageLoader
+ImageLoader imageLoader = ImageLoader.getInstance();
+// Initialize ImageLoader with configuration. Do it once. 
+imageLoader.init(ImageLoaderConfiguration.createDefault(context)); 
+// Load and display image asynchronously 
+imageLoader.displayImage(imageUrl, imageView);
 ```
 
 ### Most detailed
@@ -58,111 +58,111 @@ imageLoader.displayImage(imageUrl, imageView);<br/>
 ImageView imageView = ...
 
 String imageUrl = "http://site.com/image.png"; // or "file:///mnt/sdcard/images/image.jpg"
-ProgressBar spinner = ...<br/>
-File cacheDir = StorageUtils.getOwnCacheDirectory(getApplicationContext(), "UniversalImageLoader/Cache"); <br/>
- <br/>
-// Get singletone instance of ImageLoader <br/>
-ImageLoader imageLoader = ImageLoader.getInstance(); <br/>
-// Create configuration for ImageLoader (all options are optional, use only those you really want to customize) <br/>
-// DON'T COPY THIS CODE TO YOUR PROJECT! This is just example of using ALL options. Most of them have default values. <br/>
-ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())  <br/>
-			.memoryCacheExtraOptions(480, 800) // max width, max height <br/>
-			.discCacheExtraOptions(480, 800, CompressFormat.JPEG, 75) // Can slow ImageLoader, use it carefully (Better don't use it)<br/>
-			.threadPoolSize(3)<br/>
-			.threadPriority(Thread.NORM_PRIORITY - 1)<br/>
-			.denyCacheImageMultipleSizesInMemory()<br/>
-			.offOutOfMemoryHandling()<br/>
-			.memoryCache(new UsingFreqLimitedMemoryCache(2 * 1024 * 1024)) // You can pass your own memory cache implementation<br/>
-			.discCache(new UnlimitedDiscCache(cacheDir)) // You can pass your own disc cache implementation<br/>
-			.discCacheFileNameGenerator(new HashCodeFileNameGenerator())<br/>
-			.imageDownloader(new URLConnectionImageDownloader(5 * 1000, 20 * 1000)) // connectTimeout (5 s), readTimeout (20 s)<br/>
-			.tasksProcessingOrder(QueueProcessingType.FIFO)<br/>
-			.defaultDisplayImageOptions(DisplayImageOptions.createSimple()) <br/>
-			.enableLogging()<br/>
-			.build(); <br/>
-// Initialize ImageLoader with created configuration. Do it once on Application start.<br/>
-imageLoader.init(config);<br/>
+ProgressBar spinner = ...
+File cacheDir = StorageUtils.getOwnCacheDirectory(getApplicationContext(), "UniversalImageLoader/Cache"); 
+ 
+// Get singletone instance of ImageLoader 
+ImageLoader imageLoader = ImageLoader.getInstance(); 
+// Create configuration for ImageLoader (all options are optional, use only those you really want to customize) 
+// DON'T COPY THIS CODE TO YOUR PROJECT! This is just example of using ALL options. Most of them have default values. 
+ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())  
+			.memoryCacheExtraOptions(480, 800) // max width, max height 
+			.discCacheExtraOptions(480, 800, CompressFormat.JPEG, 75) // Can slow ImageLoader, use it carefully (Better don't use it)
+			.threadPoolSize(3)
+			.threadPriority(Thread.NORM_PRIORITY - 1)
+			.denyCacheImageMultipleSizesInMemory()
+			.offOutOfMemoryHandling()
+			.memoryCache(new UsingFreqLimitedMemoryCache(2 * 1024 * 1024)) // You can pass your own memory cache implementation
+			.discCache(new UnlimitedDiscCache(cacheDir)) // You can pass your own disc cache implementation
+			.discCacheFileNameGenerator(new HashCodeFileNameGenerator())
+			.imageDownloader(new URLConnectionImageDownloader(5 * 1000, 20 * 1000)) // connectTimeout (5 s), readTimeout (20 s)
+			.tasksProcessingOrder(QueueProcessingType.FIFO)
+			.defaultDisplayImageOptions(DisplayImageOptions.createSimple()) 
+			.enableLogging()
+			.build(); 
+// Initialize ImageLoader with created configuration. Do it once on Application start.
+imageLoader.init(config);
 ```
 ``` java
-// Creates display image options for custom display task (all options are optional) <br/>
-DisplayImageOptions options = new DisplayImageOptions.Builder() <br/>
-           .showStubImage(R.drawable.stub_image) <br/>
-		   .showImageForEmptyUri(R.drawable.image_for_empty_url)<br/>
-           .cacheInMemory()<br/>
-           .cacheOnDisc()<br/>
-		   .imageScaleType(ImageScaleType.IN_SAMPLE_POWER_OF_2) <br/>
-		   .bitmapConfig(Bitmap.Config.ARGB_8888)<br/>
-		   .delayBeforeLoading(1000)<br/>
-		   .displayer(new RoundedBitmapDisplayer(20))<br/>
-           .build(); <br/>
-// Load and display image <br/>
-imageLoader.displayImage(imageUrl, imageView, options, new ImageLoadingListener() {<br/>
-    @Override <br/>
-    public void onLoadingStarted() {<br/>
-       spinner.show(); <br/>
-    } <br/>
-	@Override<br/>
-	public void onLoadingFailed(FailReason failReason) {<br/>
-		spinner.hide();<br/>
-	}<br/>
-    @Override<br/>
-    public void onLoadingComplete(Bitmap loadedImage) {<br/>
-        spinner.hide();<br/>
-    }<br/>
-	@Override  <br/>
-    public void onLoadingCancelled() { <br/>
-        // Do nothing  <br/>
-    } <br/>
-});<br/>
+// Creates display image options for custom display task (all options are optional) 
+DisplayImageOptions options = new DisplayImageOptions.Builder() 
+           .showStubImage(R.drawable.stub_image) 
+		   .showImageForEmptyUri(R.drawable.image_for_empty_url)
+           .cacheInMemory()
+           .cacheOnDisc()
+		   .imageScaleType(ImageScaleType.IN_SAMPLE_POWER_OF_2) 
+		   .bitmapConfig(Bitmap.Config.ARGB_8888)
+		   .delayBeforeLoading(1000)
+		   .displayer(new RoundedBitmapDisplayer(20))
+           .build(); 
+// Load and display image 
+imageLoader.displayImage(imageUrl, imageView, options, new ImageLoadingListener() {
+    @Override 
+    public void onLoadingStarted() {
+       spinner.show(); 
+    } 
+	@Override
+	public void onLoadingFailed(FailReason failReason) {
+		spinner.hide();
+	}
+    @Override
+    public void onLoadingComplete(Bitmap loadedImage) {
+        spinner.hide();
+    }
+	@Override  
+    public void onLoadingCancelled() { 
+        // Do nothing  
+    } 
+});
 ```
 ``` java
-// Just load image<br/>
-DisplayImageOptions options = new DisplayImageOptions.Builder() <br/>
-           .cacheInMemory() <br/>
-           .cacheOnDisc() <br/>
-		   .imageScaleType(ImageScaleType.IN_SAMPLE_INT) <br/>
-		   .displayer(new FakeBitmapDisplayer())<br/>
-           .build();<br/>
-ImageSize minImageSize = new ImageSize(120, 80);<br/>
-imageLoader.loadImage(context, imageUrl, minImageSize, options, new SimpleImageLoadingListener() {<br/>
-	@Override<br/>
-	public void onLoadingComplete(Bitmap loadedImage) { <br/>
-		// Do whatever you want with loaded Bitmap <br/>
-	}<br/>
-});<br/>
+// Just load image
+DisplayImageOptions options = new DisplayImageOptions.Builder() 
+           .cacheInMemory() 
+           .cacheOnDisc() 
+		   .imageScaleType(ImageScaleType.IN_SAMPLE_INT) 
+		   .displayer(new FakeBitmapDisplayer())
+           .build();
+ImageSize minImageSize = new ImageSize(120, 80);
+imageLoader.loadImage(context, imageUrl, minImageSize, options, new SimpleImageLoadingListener() {
+	@Override
+	public void onLoadingComplete(Bitmap loadedImage) { 
+		// Do whatever you want with loaded Bitmap 
+	}
+});
 ```
 
 ## Useful info
 1. **Caching is NOT enabled by default.** If you want loaded images will be cached in memory and/or on disc then you should enable caching in DisplayImageOptions this way:
 ``` java
-// Create default options which will be used for every <br/>
-//  displayImage(...) call if no options will be passed to this method<br/>
-DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder() <br/>
-			...       <br/>
-            .cacheInMemory()  <br/>
-            .cacheOnDisc()<br/>
-            ... <br/>
-            .build();<br/>
-ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())<br/>
-            ...<br/>
-            .defaultDisplayImageOptions(defaultOptions)<br/>
-            ...<br/>
-            .build();<br/>
-ImageLoader.getInstance().init(config); // Do it on Application start<br/>
+// Create default options which will be used for every 
+//  displayImage(...) call if no options will be passed to this method
+DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder() 
+			...       
+            .cacheInMemory()  
+            .cacheOnDisc()
+            ... 
+            .build();
+ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
+            ...
+            .defaultDisplayImageOptions(defaultOptions)
+            ...
+            .build();
+ImageLoader.getInstance().init(config); // Do it on Application start
 ```
 ``` java
-// Then later, when you want to display image<br/>
-ImageLoader.getInstance().displayImage(imageUrl, imageView); // Default options will be used<br/>
+// Then later, when you want to display image
+ImageLoader.getInstance().displayImage(imageUrl, imageView); // Default options will be used
 ```
 or this way:
 ``` java
-DisplayImageOptions options = new DisplayImageOptions.Builder()<br/>
-			...                                                     <br/>
-            .cacheInMemory()<br/>
-            .cacheOnDisc()<br/>
-            ...<br/>
-            .build();<br/>
-ImageLoader.getInstance().displayImage(imageUrl, imageView, options); // Incoming options will be used<br/>
+DisplayImageOptions options = new DisplayImageOptions.Builder()
+			...                                                     
+            .cacheInMemory()
+            .cacheOnDisc()
+            ...
+            .build();
+ImageLoader.getInstance().displayImage(imageUrl, imageView, options); // Incoming options will be used
 ```
 
 2. If you enabled disc caching then UIL try to cache images on external storage (/sdcard/Android/data/[package_name]/cache). If external storage is not available then images are cached on device's filesytem.
@@ -181,11 +181,11 @@ To provide caching on external storage (SD card) add following permission to And
 
 4. If you often got **OutOfMemoryError** in your app using Universal Image Loader then try set WeakMemoryCache into configuration:
 ``` java
-ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())<br/>
-			...<br/>
-			.memoryCache(new WeakMemoryCache())<br/>
-			...<br/>
-			.build();<br/>
+ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
+			...
+			.memoryCache(new WeakMemoryCache())
+			...
+			.build();
 ```
 or disable caching in memory at all (in DisplayImageOptions).
 
