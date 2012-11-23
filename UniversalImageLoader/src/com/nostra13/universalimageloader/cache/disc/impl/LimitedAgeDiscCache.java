@@ -60,16 +60,20 @@ public class LimitedAgeDiscCache extends BaseDiscCache {
 //    }
 
     @Override
-    public void put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
+    public boolean put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
         File file = super.getFile(key);
-        super.put(key, bitmap, config);
-        long currentTime = System.currentTimeMillis();
-        file.setLastModified(currentTime);
-        loadingDates.put(file, currentTime);
+        if (super.put(key, bitmap, config)) {
+            long currentTime = System.currentTimeMillis();
+            file.setLastModified(currentTime);
+            loadingDates.put(file, currentTime);
+            return true;
+        }
+        return false;
+
     }
 
     @Override
-    public Bitmap get(String key) {
+    public Bitmap get(String key, BitmapFactory.Options options) {
         File file = super.getFile(key);
         Bitmap bitmap = null;
         if (file.exists()) {
@@ -83,7 +87,7 @@ public class LimitedAgeDiscCache extends BaseDiscCache {
             }
         }
 //        if (file.exists()) {
-            bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+            bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
 //        }
         return bitmap;
     }

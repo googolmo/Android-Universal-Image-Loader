@@ -7,6 +7,7 @@ import com.nostra13.universalimageloader.cache.disc.DiscCacheAware;
 import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
 import com.nostra13.universalimageloader.core.DefaultConfigurationFactory;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.utils.FileUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -66,17 +67,18 @@ public class LruDiskCache implements DiscCacheAware {
     }
 
     @Override
-    public void put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
+    public boolean put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
         DiskLruCache.Editor editor = null;
         key = this.fileNameGenerator.generate(key);
         try {
             editor = mDiskCache.edit(key);
             if (editor == null) {
-                return;
+                return false;
             }
             if (writeBitmapToFile(bitmap, editor, config)) {
                 mDiskCache.flush();
                 editor.commit();
+                return true;
             } else {
                 editor.abort();
             }
@@ -90,6 +92,7 @@ public class LruDiskCache implements DiscCacheAware {
                 ignored.printStackTrace();
             }
         }
+        return false;
     }
 
     private boolean writeBitmapToFile(Bitmap bitmap, DiskLruCache.Editor editor, ImageLoaderConfiguration config) throws IOException {
@@ -105,7 +108,7 @@ public class LruDiskCache implements DiscCacheAware {
     }
 
     @Override
-    public Bitmap get(String key) {
+    public Bitmap get(String key, BitmapFactory.Options options) {
         Bitmap bitmap = null;
         DiskLruCache.Snapshot snapshot = null;
         key = this.fileNameGenerator.generate(key);
@@ -117,7 +120,12 @@ public class LruDiskCache implements DiscCacheAware {
             final InputStream in = snapshot.getInputStream(0);
             if (in != null) {
                 final BufferedInputStream buffIn = new BufferedInputStream(in, IO_BUFFER_SIZE);
-                bitmap = BitmapFactory.decodeStream(buffIn);
+                if (options == null) {
+                    bitmap = BitmapFactory.decodeStream(buffIn);
+                } else {
+                    bitmap = BitmapFactory.decodeStream(buffIn, null, options);
+                }
+
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -128,6 +136,26 @@ public class LruDiskCache implements DiscCacheAware {
         }
         return bitmap;
     }
+
+//    @Override
+//    public InputStream getInputStream(String key) {
+//        DiskLruCache.Snapshot snapshot = null;
+//        key = this.fileNameGenerator.generate(key);
+//        try {
+//            snapshot = mDiskCache.get(key);
+//            if (snapshot == null) {
+//                return null;
+//            }
+//            return snapshot.getInputStream(0);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } finally {
+//            if (snapshot != null) {
+//                snapshot.close();
+//            }
+//        }
+//        return null;
+//    }
 
     @Override
     public void clear() {

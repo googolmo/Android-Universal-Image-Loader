@@ -78,7 +78,7 @@ public abstract class LimitedDiscCache extends BaseDiscCache {
 //    }
 
     @Override
-    public void put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
+    public boolean put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
         File file = super.getFile(key);
         int valueSize = getSize(file);
         while (cacheSize + valueSize > sizeLimit) {
@@ -87,21 +87,26 @@ public abstract class LimitedDiscCache extends BaseDiscCache {
             cacheSize -= freedSize;
         }
         cacheSize += valueSize;
-        super.put(key, bitmap, config);
-        Long currentTime = System.currentTimeMillis();
-        file.setLastModified(currentTime);
-        lastUsageDates.put(file, currentTime);
+        if (super.put(key, bitmap, config)) {
+            Long currentTime = System.currentTimeMillis();
+            file.setLastModified(currentTime);
+            lastUsageDates.put(file, currentTime);
+            return true;
+        } else {
+            return false;
+        }
+
     }
 
     @Override
-    public Bitmap get(String key) {
+    public Bitmap get(String key, BitmapFactory.Options options) {
         File file = super.getFile(key);
 
         Long currentTime = System.currentTimeMillis();
         file.setLastModified(currentTime);
         lastUsageDates.put(file, currentTime);
 
-        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
 
         return bitmap;
     }

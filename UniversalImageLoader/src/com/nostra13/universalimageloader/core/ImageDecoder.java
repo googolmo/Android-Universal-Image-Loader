@@ -32,6 +32,7 @@ class ImageDecoder {
     private final URI imageUri;
     private final ImageDownloader imageDownloader;
     private final DisplayImageOptions displayOptions;
+    private final ImageLoaderConfiguration config;
 
     private boolean loggingEnabled;
 
@@ -42,10 +43,12 @@ class ImageDecoder {
      *            Image downloader
      *
      */
-    ImageDecoder(URI imageUri, ImageDownloader imageDownloader, DisplayImageOptions options) {
+    ImageDecoder(URI imageUri, ImageDownloader imageDownloader, DisplayImageOptions options
+            , ImageLoaderConfiguration config) {
         this.imageUri = imageUri;
         this.imageDownloader = imageDownloader;
         this.displayOptions = options;
+        this.config = config;
     }
 
     /**
@@ -80,13 +83,20 @@ class ImageDecoder {
      */
     public Bitmap decode(ImageSize targetSize, ImageScaleType scaleType, ViewScaleType viewScaleType) throws IOException {
         Options decodeOptions = getBitmapOptionsForImageDecoding(targetSize, scaleType, viewScaleType);
-        InputStream imageStream = imageDownloader.getStream(imageUri);
         Bitmap subsampledBitmap;
-        try {
-            subsampledBitmap = BitmapFactory.decodeStream(imageStream, null, decodeOptions);
-        } finally {
-            imageStream.close();
+        if (imageUri.getScheme().equals(ImageDownloader.PROTOCOL_CACHE)) {
+            subsampledBitmap = imageDownloader.getBitmap(imageUri, config, decodeOptions);
+        } else {
+            InputStream imageStream = imageDownloader.getStream(imageUri, config);
+            try {
+                subsampledBitmap = BitmapFactory.decodeStream(imageStream, null, decodeOptions);
+            } finally {
+                imageStream.close();
+            }
         }
+
+
+
         if (subsampledBitmap == null) {
             return null;
         }
@@ -114,12 +124,17 @@ class ImageDecoder {
         // decode image size
         Options options = new Options();
         options.inJustDecodeBounds = true;
-        InputStream imageStream = imageDownloader.getStream(imageUri);
-        try {
-            BitmapFactory.decodeStream(imageStream, null, options);
-        } finally {
-            imageStream.close();
-        }
+//        if (imageUri.getScheme().equals(ImageDownloader.PROTOCOL_CACHE)) {
+//            imageDownloader.getBitmap(imageUri, config);
+//        } else {
+//            InputStream imageStream = imageDownloader.getStream(imageUri, config);
+//            try {
+//                BitmapFactory.decodeStream(imageStream, null, options);
+//            } finally {
+//                imageStream.close();
+//            }
+//        }
+
 
         int scale = 1;
         int imageWidth = options.outWidth;
@@ -180,6 +195,7 @@ class ImageDecoder {
             scaledBitmap = Bitmap.createScaledBitmap(subsampledBitmap, destWidth, destHeight, true);
             if (scaledBitmap != subsampledBitmap) {
                 subsampledBitmap.recycle();
+                subsampledBitmap = null;
             }
             if (loggingEnabled) L.d(LOG_IMAGE_SCALED, (int) srcWidth, (int) srcHeight, destWidth, destHeight);
         } else {

@@ -42,16 +42,17 @@ public class DefaultConfigurationFactory {
     public static DiscCacheAware createDiscCache(Context context, FileNameGenerator discCacheFileNameGenerator, int discCacheSize, int discCacheFileCount) {
         if (discCacheSize > 0 && discCacheFileCount <= 0) {
             File individualCacheDir = StorageUtils.getIndividualCacheDirectory(context);
-            return new TotalSizeLimitedDiscCache(individualCacheDir, discCacheFileNameGenerator, discCacheSize);
+//            return new TotalSizeLimitedDiscCache(individualCacheDir, discCacheFileNameGenerator, discCacheSize);
+            return new LruDiskCache(individualCacheDir, discCacheFileNameGenerator);
         } else if (discCacheFileCount > 0 && discCacheSize <= 0) {
             File individualCacheDir = StorageUtils.getIndividualCacheDirectory(context);
             return new FileCountLimitedDiscCache(individualCacheDir, discCacheFileNameGenerator, discCacheFileCount);
         } else if (discCacheFileCount > 0 && discCacheSize > 0){
-            File cacheDir = StorageUtils.getCacheDirectory(context);
-            return new LruDiskCache(cacheDir, discCacheSize, discCacheFileNameGenerator);
+            File individualCacheDir = StorageUtils.getIndividualCacheDirectory(context);
+            return new LruDiskCache(individualCacheDir, discCacheSize, discCacheFileNameGenerator);
         } else {
-            File cacheDir = StorageUtils.getCacheDirectory(context);
-            return new LruDiskCache(cacheDir, discCacheFileNameGenerator);
+            File individualCacheDir = StorageUtils.getIndividualCacheDirectory(context);
+            return new LruDiskCache(individualCacheDir, discCacheFileNameGenerator);
 //            return new UnlimitedDiscCache(cacheDir, discCacheFileNameGenerator);
         }
     }

@@ -1,9 +1,11 @@
 package com.nostra13.universalimageloader.cache.disc;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -25,6 +27,7 @@ public abstract class BaseDiscCache implements DiscCacheAware {
     private File cacheDir;
 
     private FileNameGenerator fileNameGenerator;
+    protected static final int BUFFER_SIZE = 8 * 1024; // 8 Kb
 
     public BaseDiscCache(File cacheDir) {
         this(cacheDir, DefaultConfigurationFactory.createFileNameGenerator());
@@ -36,15 +39,28 @@ public abstract class BaseDiscCache implements DiscCacheAware {
     }
 
     @Override
-    public Bitmap get(String key) {
+    public Bitmap get(String key, BitmapFactory.Options options) {
         String fileName = fileNameGenerator.generate(key);
         File f = new File(cacheDir, fileName);
-        Bitmap bitmap = BitmapFactory.decodeFile(f.getAbsolutePath());
+        Bitmap bitmap = BitmapFactory.decodeFile(f.getAbsolutePath(), options);
         if (bitmap == null && f.exists()) {
             f.delete();
         }
         return bitmap;
     }
+
+//    @Override
+//    public InputStream getInputStream(String key) {
+//        String fileName = fileNameGenerator.generate(key);
+//        File f = new File(cacheDir, fileName);
+//        InputStream in = null;
+//        try {
+//             in = new BufferedInputStream(f.toURI().toURL().openStream(), BUFFER_SIZE);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return in;
+//    }
 
     public File getFile(String key) {
         String fileName = fileNameGenerator.generate(key);
@@ -73,7 +89,7 @@ public abstract class BaseDiscCache implements DiscCacheAware {
     }
 
     @Override
-    public void put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
+    public boolean put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
         File file = getFile(key);
         if (file.exists()) {
             file.delete();
@@ -89,9 +105,9 @@ public abstract class BaseDiscCache implements DiscCacheAware {
             e.printStackTrace();
         }
         boolean result = bitmap.compress(config.imageCompressFormatForDiscCache, config.imageQualityForDiscCache, out);
-        if (result) {
-            bitmap.recycle();
-        }
+//        if (result) {
+//            bitmap.recycle();
+//        }
         try {
             out.flush();
         } catch (IOException e) {
@@ -102,6 +118,7 @@ public abstract class BaseDiscCache implements DiscCacheAware {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return result;
 
 
     }

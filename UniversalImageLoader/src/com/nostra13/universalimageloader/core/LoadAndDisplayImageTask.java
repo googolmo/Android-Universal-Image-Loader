@@ -167,33 +167,49 @@ final class LoadAndDisplayImageTask implements Runnable {
             e.printStackTrace();
         }
 
-        bitmap = configuration.discCache.get(uri);
 
-
-        if (bitmap != null) {
-            if (configuration.loggingEnabled) {
-                Log.i(ImageLoader.TAG, String.format(LOG_LOAD_IMAGE_FROM_DISC_CACHE, memoryCacheKey));
-            }
-            return bitmap;
-        }
 
 
         try {
 
             imageUriForDecoding = new URI(uri);
-            // Load image from Web
-            if (configuration.loggingEnabled)
-                Log.i(ImageLoader.TAG, String.format(LOG_LOAD_IMAGE_FROM_INTERNET, memoryCacheKey));
 
-            if (options.isCacheOnDisc()) {
+            bitmap = configuration.discCache.get(uri, null);
 
+
+            if (bitmap != null) {
                 if (configuration.loggingEnabled) {
-                    Log.i(ImageLoader.TAG, String.format(LOG_CACHE_IMAGE_ON_DISC, memoryCacheKey));
+                    Log.i(ImageLoader.TAG, String.format(LOG_LOAD_IMAGE_FROM_DISC_CACHE, memoryCacheKey));
                 }
-                bitmap = getBitmap();
-                configuration.discCache.put(uri, bitmap, configuration);
-                return bitmap;
+                imageUriForDecoding = new URI("discCache://" + uri);
+//            return bitmap;
+            }  else {
+                // Load image from Web
+                if (configuration.loggingEnabled)
+                    Log.i(ImageLoader.TAG, String.format(LOG_LOAD_IMAGE_FROM_INTERNET, memoryCacheKey));
+
+                if (options.isCacheOnDisc()) {
+
+                    if (configuration.loggingEnabled) {
+                        Log.i(ImageLoader.TAG, String.format(LOG_CACHE_IMAGE_ON_DISC, memoryCacheKey));
+                    }
+//                bitmap = getBitmap();
+//                configuration.discCache.put(uri, bitmap, configuration);
+//                return bitmap;
+                    if (saveImageOnDisc()) {
+                        imageUriForDecoding = new URI("discCache://" + uri);
+                    }
+
+                }
+//            else {
+//                imageUriForDecoding = new URI(uri);
+//            }
+
             }
+
+
+
+
 
             bitmap = decodeImage(imageUriForDecoding);
             if (bitmap == null) {
@@ -218,7 +234,7 @@ final class LoadAndDisplayImageTask implements Runnable {
         if (configuration.handleOutOfMemory) {
             bmp = decodeWithOOMHandling(imageUri);
         } else {
-            ImageDecoder decoder = new ImageDecoder(imageUri, configuration.downloader, options);
+            ImageDecoder decoder = new ImageDecoder(imageUri, configuration.downloader, options, configuration);
             decoder.setLoggingEnabled(configuration.loggingEnabled);
             ViewScaleType viewScaleType = ViewScaleType.fromImageView(imageView);
             bmp = decoder.decode(targetSize, options.getImageScaleType(), viewScaleType);
@@ -228,7 +244,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 
     private Bitmap decodeWithOOMHandling(URI imageUri) throws IOException {
         Bitmap result = null;
-        ImageDecoder decoder = new ImageDecoder(imageUri, configuration.downloader, options);
+        ImageDecoder decoder = new ImageDecoder(imageUri, configuration.downloader, options, configuration);
         decoder.setLoggingEnabled(configuration.loggingEnabled);
         for (int attempt = 1; attempt <= ATTEMPT_COUNT_TO_DECODE_BITMAP; attempt++) {
             try {
@@ -257,61 +273,103 @@ final class LoadAndDisplayImageTask implements Runnable {
         return result;
     }
 
-    private void saveImageOnDisc(File targetFile) throws IOException, URISyntaxException {
+//    private void saveImageOnDisc(File targetFile) throws IOException, URISyntaxException {
+//        int width = configuration.maxImageWidthForDiscCache;
+//        int height = configuration.maxImageHeightForDiscCache;
+//        if (width > 0 || height > 0) {
+//            // Download, decode, compress and save image
+//            ImageSize targetImageSize = new ImageSize(width, height);
+//            ImageDecoder decoder = new ImageDecoder(new URI(uri), configuration.downloader, options);
+//            decoder.setLoggingEnabled(configuration.loggingEnabled);
+//            Bitmap bmp = decoder.decode(targetImageSize, ImageScaleType.IN_SAMPLE_INT, ViewScaleType.FIT_INSIDE);
+//
+//            OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile));
+//            boolean compressedSuccessfully = bmp.compress(configuration.imageCompressFormatForDiscCache, configuration.imageQualityForDiscCache, os);
+//            if (compressedSuccessfully) {
+//                bmp.recycle();
+//                return;
+//            }
+//        }
+//
+//        // If previous compression wasn't needed or failed
+//        // Download and save original image
+//        InputStream is = configuration.downloader.getStream(new URI(uri));
+//        try {
+//            OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile));
+//            try {
+//                FileUtils.copyStream(is, os);
+//            } finally {
+//                os.close();
+//            }
+//        } finally {
+//            is.close();
+//        }
+//    }
+
+    private boolean saveImageOnDisc() throws IOException, URISyntaxException {
         int width = configuration.maxImageWidthForDiscCache;
         int height = configuration.maxImageHeightForDiscCache;
+        boolean result = false;
         if (width > 0 || height > 0) {
             // Download, decode, compress and save image
             ImageSize targetImageSize = new ImageSize(width, height);
-            ImageDecoder decoder = new ImageDecoder(new URI(uri), configuration.downloader, options);
+            ImageDecoder decoder = new ImageDecoder(new URI(uri), configuration.downloader, options, configuration);
             decoder.setLoggingEnabled(configuration.loggingEnabled);
             Bitmap bmp = decoder.decode(targetImageSize, ImageScaleType.IN_SAMPLE_INT, ViewScaleType.FIT_INSIDE);
 
-            OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile));
-            boolean compressedSuccessfully = bmp.compress(configuration.imageCompressFormatForDiscCache, configuration.imageQualityForDiscCache, os);
-            if (compressedSuccessfully) {
+            result = configuration.discCache.put(uri, bmp, configuration);
+
+//            OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile));
+//            boolean compressedSuccessfully = bmp.compress(configuration.imageCompressFormatForDiscCache, configuration.imageQualityForDiscCache, os);
+            if (result) {
                 bmp.recycle();
-                return;
+                return true;
             }
         }
 
         // If previous compression wasn't needed or failed
         // Download and save original image
-        InputStream is = configuration.downloader.getStream(new URI(uri));
+        InputStream is = configuration.downloader.getStream(new URI(uri), configuration);
         try {
-            OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile));
-            try {
-                FileUtils.copyStream(is, os);
-            } finally {
-                os.close();
+            Bitmap bmp = BitmapFactory.decodeStream(is);
+            if (bmp != null) {
+                result = configuration.discCache.put(uri, bmp, configuration);
             }
+
+//            OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile));
+//            try {
+//                FileUtils.copyStream(is, os);
+//            } finally {
+//                os.close();
+//            }
         } finally {
             is.close();
         }
+        return result;
     }
 
-    private Bitmap getBitmap() throws IOException, URISyntaxException {
-        int width = configuration.maxImageWidthForDiscCache;
-        int height = configuration.maxImageHeightForDiscCache;
-        Bitmap bmp = null;
-
-        if (width > 0 || height > 0) {
-            // Download, decode, compress and save image
-            ImageSize targetImageSize = new ImageSize(width, height);
-            ImageDecoder decoder = new ImageDecoder(new URI(uri), configuration.downloader, options);
-            decoder.setLoggingEnabled(configuration.loggingEnabled);
-            bmp = decoder.decode(targetImageSize, ImageScaleType.IN_SAMPLE_INT, ViewScaleType.FIT_INSIDE);
-        } else {
-            InputStream is = configuration.downloader.getStream(new URI(uri));
-            try {
-                bmp = BitmapFactory.decodeStream(is);
-            } finally {
-                is.close();
-            }
-//            Log.d(ImageLoader.TAG, "bmp == null is" + (bmp == null));
-        }
-        return bmp;
-    }
+//    private Bitmap getBitmap() throws IOException, URISyntaxException {
+//        int width = configuration.maxImageWidthForDiscCache;
+//        int height = configuration.maxImageHeightForDiscCache;
+//        Bitmap bmp = null;
+//
+//        if (width > 0 || height > 0) {
+//            // Download, decode, compress and save image
+//            ImageSize targetImageSize = new ImageSize(width, height);
+//            ImageDecoder decoder = new ImageDecoder(new URI(uri), configuration.downloader, options, configuration);
+//            decoder.setLoggingEnabled(configuration.loggingEnabled);
+//            bmp = decoder.decode(targetImageSize, ImageScaleType.IN_SAMPLE_INT, ViewScaleType.FIT_INSIDE);
+//        } else {
+//            InputStream is = configuration.downloader.getStream(new URI(uri), configuration);
+//            try {
+//                bmp = BitmapFactory.decodeStream(is);
+//            } finally {
+//                is.close();
+//            }
+////            Log.d(ImageLoader.TAG, "bmp == null is" + (bmp == null));
+//        }
+//        return bmp;
+//    }
 
     private void fireImageLoadingFailedEvent(final FailReason failReason) {
         if (!Thread.interrupted()) {

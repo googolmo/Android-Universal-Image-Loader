@@ -134,6 +134,7 @@ imageLoader.loadImage(context, imageUrl, minImageSize, options, new SimpleImageL
 
 ## Useful info
 1. **Caching is NOT enabled by default.** If you want loaded images will be cached in memory and/or on disc then you should enable caching in DisplayImageOptions this way:
+
 ``` java
 // Create default options which will be used for every 
 //  displayImage(...) call if no options will be passed to this method
@@ -167,6 +168,7 @@ ImageLoader.getInstance().displayImage(imageUrl, imageView, options); // Incomin
 
 2. If you enabled disc caching then UIL try to cache images on external storage (/sdcard/Android/data/[package_name]/cache). If external storage is not available then images are cached on device's filesytem.
 To provide caching on external storage (SD card) add following permission to AndroidManifest.xml:
+
 ``` java
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 ```
@@ -180,6 +182,7 @@ To provide caching on external storage (SD card) add following permission to And
  So **try to set** ```android:layout_width```|```android:layout_height``` or ```android:maxWidth```|```android:maxHeight``` parameters for ImageView if you know approximate maximum size of it. It will help correctly compute Bitmap size needed for this view and **save memory**.
 
 4. If you often got **OutOfMemoryError** in your app using Universal Image Loader then try set WeakMemoryCache into configuration:
+
 ``` java
 ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
 			...

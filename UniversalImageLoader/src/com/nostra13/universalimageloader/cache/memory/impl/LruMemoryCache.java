@@ -3,7 +3,9 @@ package com.nostra13.universalimageloader.cache.memory.impl;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.util.Log;
 import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
+import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.utils.LruCache;
 
 import java.util.Collection;
@@ -45,6 +47,7 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
         if (this.mCache != null) {
             this.mCache.evictAll();
         }
+        Log.d(ImageLoader.TAG, "memorry cache size = " + this.capacity);
         this.mCache = new LruCache<String, Bitmap>(this.capacity) {
             @Override
             protected int sizeOf(String key, Bitmap value) {

@@ -1,9 +1,11 @@
 package com.nostra13.universalimageloader.cache.disc;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import java.io.File;
+import java.io.InputStream;
 
 /**
  * Interface for disc cache
@@ -19,7 +21,7 @@ public interface DiscCacheAware {
      */
 //    void put(String key, File file);
 
-    void put(String key, Bitmap bitmap, ImageLoaderConfiguration config);
+    boolean put(String key, Bitmap bitmap, ImageLoaderConfiguration config);
 
     /**
      * Returns {@linkplain File file object} appropriate incoming key.<br />
@@ -33,7 +35,7 @@ public interface DiscCacheAware {
      * <b>NOTE:</b> Must <b>not to return</b> a null. Method must return specific {@linkplain Bitmap object} for
      * incoming key whether file exists or not.
      */
-    Bitmap get(String key);
+    Bitmap get(String key, BitmapFactory.Options options);
 
     /**
      * Clears cache directory

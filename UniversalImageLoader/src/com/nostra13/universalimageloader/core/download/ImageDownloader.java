@@ -1,5 +1,11 @@
 package com.nostra13.universalimageloader.core.download;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Log;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,24 +18,32 @@ import java.net.URI;
  */
 public abstract class ImageDownloader {
 
-    protected static final String PROTOCOL_FILE = "file";
+    public static final String PROTOCOL_FILE = "file";
 
-    protected static final String PROTOCOL_HTTP = "http";
-    protected static final String PROTOCOL_HTTPS = "https";
-    protected static final String PROTOCOL_FTP = "ftp";
+    public static final String PROTOCOL_HTTP = "http";
+    public static final String PROTOCOL_HTTPS = "https";
+    public static final String PROTOCOL_FTP = "ftp";
+    public static final String PROTOCOL_CACHE = "discCache";
 
-    protected static final int BUFFER_SIZE = 8 * 1024; // 8 Kb
+    public static final int BUFFER_SIZE = 8 * 1024; // 8 Kb
 
     /** Retrieves {@link InputStream} of image by URI. Image can be located as in the network and on local file system. */
-    public InputStream getStream(URI imageUri) throws IOException {
+    public InputStream getStream(URI imageUri, ImageLoaderConfiguration config) throws IOException {
         String scheme = imageUri.getScheme();
         if (PROTOCOL_HTTP.equals(scheme) || PROTOCOL_HTTPS.equals(scheme) || PROTOCOL_FTP.equals(scheme)) {
             return getStreamFromNetwork(imageUri);
         } else if (PROTOCOL_FILE.equals(scheme)) {
             return getStreamFromFile(imageUri);
+        } else if (PROTOCOL_CACHE.equals(scheme)) {
+            Log.d(ImageLoader.TAG, "key=" + imageUri.getHost() + ":"+ imageUri.getPath());
+            return null;
         } else {
             return getStreamFromOtherSource(imageUri);
         }
+    }
+
+    public Bitmap getBitmap(URI imageUri, ImageLoaderConfiguration config, BitmapFactory.Options options) {
+        return config.discCache.get(imageUri.getHost() + ":"+ imageUri.getPath(), options);
     }
 
     /**
