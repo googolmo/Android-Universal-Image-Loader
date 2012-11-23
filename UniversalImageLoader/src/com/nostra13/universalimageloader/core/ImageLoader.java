@@ -219,7 +219,7 @@ public class ImageLoader {
             initExecutorsIfNeed();
             ImageLoadingInfo imageLoadingInfo = new ImageLoadingInfo(uri, imageView, targetSize, options, listener, getLockForUri(uri));
             LoadAndDisplayImageTask displayImageTask = new LoadAndDisplayImageTask(configuration, imageLoadingInfo, new Handler());
-            boolean isImageCachedOnDisc = configuration.discCache.get(uri, null) != null;
+            boolean isImageCachedOnDisc = configuration.discCache.isExits(uri);
             if (isImageCachedOnDisc) {
                 cachedImageLoadingExecutor.submit(displayImageTask);
             } else {

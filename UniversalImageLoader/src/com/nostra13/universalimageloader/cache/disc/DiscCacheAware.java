@@ -47,4 +47,6 @@ public interface DiscCacheAware {
      * @param key
      */
     boolean delete(String key);
+
+    boolean isExits(String key);
 }

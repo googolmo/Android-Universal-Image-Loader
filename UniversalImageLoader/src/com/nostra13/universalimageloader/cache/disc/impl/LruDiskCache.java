@@ -170,4 +170,20 @@ public class LruDiskCache implements DiscCacheAware {
     public boolean delete(String key) {
         return false;
     }
+
+    @Override
+    public boolean isExits(String key) {
+        DiskLruCache.Snapshot snapshot = null;
+        key = this.fileNameGenerator.generate(key);
+        try {
+            snapshot = mDiskCache.get(key);
+            if (snapshot != null) {
+                return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
 }

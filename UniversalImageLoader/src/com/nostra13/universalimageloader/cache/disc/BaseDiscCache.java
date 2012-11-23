@@ -126,4 +126,14 @@ public abstract class BaseDiscCache implements DiscCacheAware {
     protected File getCacheDir() {
         return cacheDir;
     }
+
+    @Override
+    public boolean isExits(String key) {
+        String fileName = fileNameGenerator.generate(key);
+        File f = new File(cacheDir, fileName);
+        if (f.exists()) {
+            return true;
+        }
+        return false;
+    }
 }
