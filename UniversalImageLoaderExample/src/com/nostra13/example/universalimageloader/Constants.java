@@ -7,6 +7,7 @@ public final class Constants {
 
     public static final String[] IMAGES = new String[]{
             // Heavy images
+            "http://avatar1.fanfou.com/l0/01/7k/n6.jpg?1349756400",
             "http://img3.douban.com/view/photo/photo/public/p1783522312.jpg",
             "http://img3.douban.com/view/photo/photo/public/p1783526276.jpg",
             "http://img3.douban.com/view/photo/photo/public/p1783530725.jpg",

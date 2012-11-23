@@ -35,7 +35,6 @@ public abstract class ImageDownloader {
         } else if (PROTOCOL_FILE.equals(scheme)) {
             return getStreamFromFile(imageUri);
         } else if (PROTOCOL_CACHE.equals(scheme)) {
-            Log.d(ImageLoader.TAG, "key=" + imageUri.getHost() + ":"+ imageUri.getPath());
             return null;
         } else {
             return getStreamFromOtherSource(imageUri);
@@ -43,7 +42,8 @@ public abstract class ImageDownloader {
     }
 
     public Bitmap getBitmap(URI imageUri, ImageLoaderConfiguration config, BitmapFactory.Options options) {
-        return config.discCache.get(imageUri.getHost() + ":"+ imageUri.getPath(), options);
+        String url = imageUri.toString().replace(imageUri.getScheme() + "://", "");
+        return config.discCache.get(url, options);
     }
 
     /**
