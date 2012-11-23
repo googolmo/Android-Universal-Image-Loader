@@ -156,6 +156,7 @@ ImageLoader.getInstance().init(config); // Do it on Application start
 ImageLoader.getInstance().displayImage(imageUrl, imageView); // Default options will be used
 ```
 or this way:
+
 ``` java
 DisplayImageOptions options = new DisplayImageOptions.Builder()
 			...                                                     
