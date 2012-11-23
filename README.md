@@ -39,6 +39,14 @@ Mention next information in your question/problem:
 
 ## Usage
 
+``` xml
+<dependency>
+    <groupId>com.d.imageloader</groupId>
+    <artifactId>loader</artifactId>
+    <version>1.6.4-SNAPSHOT</version>
+</dependency>
+```
+
 ### Simple
 
 ``` java
