@@ -35,6 +35,7 @@ final class DisplayBitmapTask implements Runnable {
         } else {
             Bitmap displayedBitmap = bitmapDisplayer.display(bitmap, imageView);
             listener.onLoadingComplete(displayedBitmap);
+			ImageLoader.getInstance().cancelDisplayTask(imageView);
         }
     }
 

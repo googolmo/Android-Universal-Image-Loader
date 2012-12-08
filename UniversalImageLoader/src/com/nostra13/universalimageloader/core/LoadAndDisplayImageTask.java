@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.graphics.Bitmap;
@@ -24,6 +25,7 @@ import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.assist.ViewScaleType;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.nostra13.universalimageloader.utils.FileUtils;
+import com.nostra13.universalimageloader.utils.L;
 
 /**
  * Presents load'n'display image task. Used to load image from Internet or file system, decode it to {@link Bitmap}, and
@@ -35,14 +37,18 @@ import com.nostra13.universalimageloader.utils.FileUtils;
  */
 final class LoadAndDisplayImageTask implements Runnable {
 
+	private static final String LOG_WAITING_FOR_RESUME = "ImageLoader is paused. Waiting...  [%s]";
+	private static final String LOG_RESUME_AFTER_PAUSE = ".. Resume loading [%s]";
     private static final String LOG_START_DISPLAY_IMAGE_TASK = "Start display image task [%s]";
-    private static final String LOG_WAITING = "Image already is loading. Waiting... [%s]";
+	private static final String LOG_WAITING_FOR_IMAGE_LOADED = "Image already is loading. Waiting... [%s]";
     private static final String LOG_GET_IMAGE_FROM_MEMORY_CACHE_AFTER_WAITING = "...Get cached bitmap from memory after waiting. [%s]";
     private static final String LOG_LOAD_IMAGE_FROM_INTERNET = "Load image from Internet [%s]";
     private static final String LOG_LOAD_IMAGE_FROM_DISC_CACHE = "Load image from disc cache [%s]";
     private static final String LOG_CACHE_IMAGE_IN_MEMORY = "Cache image in memory [%s]";
     private static final String LOG_CACHE_IMAGE_ON_DISC = "Cache image on disc [%s]";
     private static final String LOG_DISPLAY_IMAGE_IN_IMAGEVIEW = "Display image in ImageView [%s]";
+	private static final String LOG_TASK_CANCELLED = "ImageView is reused for another image. Task is cancelled. [%s]";
+	private static final String LOG_TASK_INTERRUPTED = "Task was interrupted [%s]";
 
     private static final int ATTEMPT_COUNT_TO_DECODE_BITMAP = 3;
 
@@ -78,10 +84,30 @@ final class LoadAndDisplayImageTask implements Runnable {
     @Override
     public void run() {
 
+		AtomicBoolean pause = ImageLoader.getInstance().getPause();
+		if (pause.get()) {
+			synchronized (pause) {
+				if (loggingEnabled) L.i(LOG_WAITING_FOR_RESUME, memoryCacheKey);
+				try {
+					pause.wait();
+					} catch (InterruptedException e) {
+					L.e(LOG_TASK_INTERRUPTED, memoryCacheKey);
+					return;
+					}
+				if (loggingEnabled) L.i(LOG_RESUME_AFTER_PAUSE, memoryCacheKey);
+			}
+		}
+
+		if (checkTaskIsNotActual()) return;
+
         if (options.isDelayBeforeLoading()) {
             if (loggingEnabled) Log.i(ImageLoader.TAG, String.format("Delay %d ms before loading...", options.getDelayBeforeLoading()));
-            SystemClock.sleep(options.getDelayBeforeLoading());
-            if (checkTaskIsNotActual()) return;
+			try {
+				Thread.sleep(options.getDelayBeforeLoading());
+			} catch (InterruptedException e) {
+				L.e(LOG_TASK_INTERRUPTED, memoryCacheKey);
+				return;
+			}
         }
 
         ReentrantLock loadFromUriLock = imageLoadingInfo.loadFromUriLock;
@@ -89,7 +115,7 @@ final class LoadAndDisplayImageTask implements Runnable {
         if (loggingEnabled) {
             Log.i(ImageLoader.TAG, String.format(LOG_START_DISPLAY_IMAGE_TASK, memoryCacheKey));
             if (loadFromUriLock.isLocked()) {
-                Log.i(ImageLoader.TAG, String.format(LOG_WAITING, memoryCacheKey));
+				L.i(LOG_WAITING_FOR_IMAGE_LOADED, memoryCacheKey);
             }
         }
 
@@ -104,7 +130,7 @@ final class LoadAndDisplayImageTask implements Runnable {
                 bmp = tryLoadBitmap();
                 if (bmp == null) return;
 
-                if (checkTaskIsNotActual()) return;
+                if (checkTaskIsNotActual() || checkTaskIsInterrupted()) return;
                 if (options.isCacheInMemory()) {
                     if (loggingEnabled)
                         Log.i(ImageLoader.TAG, String.format(LOG_CACHE_IMAGE_IN_MEMORY, memoryCacheKey));
@@ -120,7 +146,7 @@ final class LoadAndDisplayImageTask implements Runnable {
             loadFromUriLock.unlock();
         }
 
-        if (Thread.interrupted() || checkTaskIsNotActual()) return;
+        if (checkTaskIsNotActual() || checkTaskIsInterrupted()) return;
         if (loggingEnabled)
             Log.i(ImageLoader.TAG, String.format(LOG_DISPLAY_IMAGE_IN_IMAGEVIEW, memoryCacheKey));
 
@@ -132,7 +158,7 @@ final class LoadAndDisplayImageTask implements Runnable {
      * Check whether the image URI of this task matches to image URI which is actual for current ImageView at this
      * moment and fire {@link ImageLoadingListener#onLoadingCancelled()} event if it doesn't.
      */
-    boolean checkTaskIsNotActual() {
+    private boolean checkTaskIsNotActual() {
         String currentCacheKey = ImageLoader.getInstance().getLoadingUriForView(imageView);
         // Check whether memory cache key (image URI) for current ImageView is actual.
         // If ImageView is reused for another task then current task should be cancelled.
@@ -145,8 +171,16 @@ final class LoadAndDisplayImageTask implements Runnable {
                 }
             });
         }
+		if (loggingEnabled && imageViewWasReused) L.i(LOG_TASK_CANCELLED, memoryCacheKey);
         return imageViewWasReused;
     }
+
+	/** Check whether the current task was interrupted */
+	private boolean checkTaskIsInterrupted() {
+		boolean interrupted = Thread.interrupted();
+		if (loggingEnabled && interrupted) L.e(LOG_TASK_INTERRUPTED, memoryCacheKey);
+		return interrupted;
+	}
 
     private Bitmap tryLoadBitmap() {
         URI imageUriForDecoding = null;

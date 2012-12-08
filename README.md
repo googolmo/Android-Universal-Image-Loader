@@ -100,6 +100,7 @@ DisplayImageOptions options = new DisplayImageOptions.Builder()
            .cacheOnDisc(true)
 		   .imageScaleType(ImageScaleType.IN_SAMPLE_POWER_OF_2) 
 		   .bitmapConfig(Bitmap.Config.ARGB_8888)
+		   .resetViewBeforeLoading(true)
 		   .delayBeforeLoading(1000)
 		   .displayer(new RoundedBitmapDisplayer(20))
            .build(); 
@@ -190,7 +191,10 @@ To provide caching on external storage (SD card) add following permission to And
 
  So **try to set** ```android:layout_width```|```android:layout_height``` or ```android:maxWidth```|```android:maxHeight``` parameters for ImageView if you know approximate maximum size of it. It will help correctly compute Bitmap size needed for this view and **save memory**.
 
-4. If you often got **OutOfMemoryError** in your app using Universal Image Loader then try set WeakMemoryCache into configuration:
+4. If you often got **OutOfMemoryError** in your app using Universal Image Loader then try next (all of them or several):
+ - Reduce thread pool size in configuration (```.threadPoolSize(...)```). **1 - 5** is recommended.
+ - Use **```.bitmapConfig(Bitmap.Config.RGB_565)```** in display options. Bitmaps in RGB_565 consume 2 times less memory than in ARGB_8888.
+ - Use WeakMemoryCache in configuration:
 
 ``` java
 ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
@@ -200,6 +204,9 @@ ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplic
 			.build();
 ```
 or disable caching in memory at all (in DisplayImageOptions).
+- Use ```.imageScaleType(ImageScaleType.IN_SAMPLE_INT)``` in display options. Or try ```.imageScaleType(ImageScaleType.EXACTLY)```.
+- Avoid using RoundedBitmapDisplayer. It creates new Bitmap object with ARGB_8888 config for displaying during work.
+
 
 5. For memory cache configuration (ImageLoaderConfiguration.Builder.memoryCache(...)) you can use already prepared implementations:
  * UsingFreqLimitedMemoryCache (The least frequently used bitmap is deleted when cache size limit is exceeded)

@@ -2,6 +2,7 @@ package com.nostra13.universalimageloader.core;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
@@ -9,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.Context;
@@ -49,15 +51,16 @@ public class ImageLoader {
     private ImageLoaderConfiguration configuration;
     private ExecutorService imageLoadingExecutor;
     private ExecutorService cachedImageLoadingExecutor;
-    private ImageLoadingListener emptyListener;
-    private BitmapDisplayer fakeBitmapDisplayer;
+	private final ImageLoadingListener emptyListener = new SimpleImageLoadingListener();
+	private final BitmapDisplayer fakeBitmapDisplayer = new FakeBitmapDisplayer();
 
-    private Map<ImageView, String> cacheKeysForImageViews = Collections.synchronizedMap(new WeakHashMap<ImageView, String>());
-    private Map<String, ReentrantLock> uriLocks = Collections.synchronizedMap(new WeakHashMap<String, ReentrantLock>());
+	private Map<Integer, String> cacheKeysForImageViews = Collections.synchronizedMap(new HashMap<Integer, String>());
+    private Map<String, ReentrantLock> uriLocks = new WeakHashMap<String, ReentrantLock>();
+	private final AtomicBoolean paused = new AtomicBoolean(false);
 
     private volatile static ImageLoader instance;
 
-    /** Returns singletone class instance */
+    /** Returns singleton class instance */
     public static ImageLoader getInstance() {
         if (instance == null) {
             synchronized (ImageLoader.class) {
@@ -87,8 +90,6 @@ public class ImageLoader {
         }
         if (this.configuration == null) {
             this.configuration = configuration;
-            emptyListener = new SimpleImageLoadingListener();
-            fakeBitmapDisplayer = new FakeBitmapDisplayer();
         }
     }
 
@@ -184,7 +185,7 @@ public class ImageLoader {
         }
 
         if (uri == null || uri.length() == 0) {
-            cacheKeysForImageViews.remove(imageView);
+            cacheKeysForImageViews.remove(imageView.hashCode());
             listener.onLoadingStarted();
             if (options.isShowImageForEmptyUri()) {
                 imageView.setImageResource(options.getImageForEmptyUri());
@@ -197,7 +198,7 @@ public class ImageLoader {
 
         ImageSize targetSize = getImageSizeScaleTo(imageView);
         String memoryCacheKey = MemoryCacheUtil.generateKey(uri, targetSize);
-        cacheKeysForImageViews.put(imageView, memoryCacheKey);
+        cacheKeysForImageViews.put(imageView.hashCode(), memoryCacheKey);
 
         Bitmap bmp = configuration.memoryCache.get(memoryCacheKey);
         if (bmp != null && !bmp.isRecycled()) {
@@ -387,7 +388,7 @@ public class ImageLoader {
 
     /** Returns URI of image which is loading at this moment into passed {@link ImageView} */
     public String getLoadingUriForView(ImageView imageView) {
-        return cacheKeysForImageViews.get(imageView);
+        return cacheKeysForImageViews.get(imageView.hashCode());
     }
 
     /**
@@ -397,8 +398,24 @@ public class ImageLoader {
      *            {@link ImageView} for which display task will be cancelled
      */
     public void cancelDisplayTask(ImageView imageView) {
-        cacheKeysForImageViews.remove(imageView);
+        cacheKeysForImageViews.remove(imageView.hashCode());
     }
+
+	/**
+	 * Pause ImageLoader. All new "load&display" tasks won't be executed until ImageLoader is {@link #resume() resumed}.<br />
+	 * Already running tasks are not paused.
+	 */
+	public void pause() {
+		paused.set(true);
+	}
+
+	/** Resumes waiting "load&display" tasks */
+	public void resume() {
+		synchronized (paused) {
+			paused.set(false);
+			paused.notifyAll();
+		}
+	}
 
     /** Stops all running display image tasks, discards all other scheduled tasks */
     public void stop() {
@@ -451,13 +468,15 @@ public class ImageLoader {
     }
 
     private ReentrantLock getLockForUri(String uri) {
-        synchronized (uriLocks) {
-            ReentrantLock lock = uriLocks.get(uri);
-            if (lock == null) {
-                lock = new ReentrantLock();
-                uriLocks.put(uri, lock);
-            }
-            return lock;
-        }
-    }
+		ReentrantLock lock = uriLocks.get(uri);
+		if (lock == null) {
+			lock = new ReentrantLock();
+			uriLocks.put(uri, lock);
+		}
+		return lock;
+	}
+
+	AtomicBoolean getPause() {
+		return paused;
+	}
 }

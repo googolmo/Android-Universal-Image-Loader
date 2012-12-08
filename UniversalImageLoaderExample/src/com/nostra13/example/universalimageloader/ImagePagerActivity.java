@@ -36,6 +36,7 @@ public class ImagePagerActivity extends BaseActivity {
                 .showImageForEmptyUri(R.drawable.image_for_empty_url)
                 .cacheOnDisc(true)
                 .cacheInMemory(true)
+				.resetViewBeforeLoading(true)
                 .imageScaleType(ImageScaleType.IN_SAMPLE_INT)
                 .bitmapConfig(Bitmap.Config.RGB_565)
                 .displayer(new FadeInBitmapDisplayer(300))
