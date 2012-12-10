@@ -26,7 +26,7 @@ import com.nostra13.universalimageloader.utils.L;
  */
 class ImageDecoder {
 
-    private static final String LOG_IMAGE_SUBSAMPLED = "Original image (%1$dx%2$d) is going to be subsampled to %3$dx%4$d view. Computed scale size - %5$d";
+    private static final String LOG_IMAGE_SUBSAMPLED = "Original image (%1$dx%2$d) is going to be subsampled to %3$dx%4$d view. Computed scale size - %5$s";
     private static final String LOG_IMAGE_SCALED = "Subsampled image (%1$dx%2$d) was scaled to %3$dx%4$d";
 
     private final URI imageUri;
@@ -111,7 +111,7 @@ class ImageDecoder {
 
     private Options getBitmapOptionsForImageDecoding(ImageSize targetSize, ImageScaleType scaleType, ViewScaleType viewScaleType) throws IOException {
         Options decodeOptions = new Options();
-        decodeOptions.inSampleSize = computeImageScale(targetSize, scaleType, viewScaleType);
+//        decodeOptions.inSampleSize = computeImageScale(targetSize, scaleType, viewScaleType);
         decodeOptions.inPreferredConfig = displayOptions.getBitmapConfig();
         return decodeOptions;
     }
@@ -124,23 +124,41 @@ class ImageDecoder {
         // decode image size
         Options options = new Options();
         options.inJustDecodeBounds = true;
-//        if (imageUri.getScheme().equals(ImageDownloader.PROTOCOL_CACHE)) {
-//            imageDownloader.getBitmap(imageUri, config);
-//        } else {
+
+        if (imageUri.getScheme().equals(ImageDownloader.PROTOCOL_CACHE)) {
+//            Bitmap b = imageDownloader.getBitmap(imageUri, config, null);
+//			if (b != null) {
+//				options.outWidth = b.getWidth();
+//				options.outHeight = b.getHeight();
+//				b.recycle();
+//				b = null;
+//			}
+
+
+        } else {
 //            InputStream imageStream = imageDownloader.getStream(imageUri, config);
 //            try {
-//                BitmapFactory.decodeStream(imageStream, null, options);
+//                Bitmap b = BitmapFactory.decodeStream(imageStream, null, options);
+//				if (b != null) {
+//					options.outWidth = b.getWidth();
+//					options.outHeight = b.getHeight();
+//					b.recycle();
+//					b = null;
+//				}
 //            } finally {
 //                imageStream.close();
 //            }
-//        }
+        }
 
 
-        int scale = 1;
+        float scale = 1.0f;
+
         int imageWidth = options.outWidth;
         int imageHeight = options.outHeight;
-        int widthScale = imageWidth / targetWidth;
-        int heightScale = imageHeight / targetHeight;
+        float widthScale = imageWidth / (float)targetWidth;
+        float heightScale = imageHeight / (float)targetHeight;
+
+		if (loggingEnabled) L.d("iW=" + imageWidth + "iH=" + imageHeight + "tW=" + targetWidth + "tH = " + targetHeight);
 
         if (viewScaleType == ViewScaleType.FIT_INSIDE) {
             if (scaleType == ImageScaleType.IN_SAMPLE_POWER_OF_2 || scaleType == ImageScaleType.POWER_OF_2) {
@@ -160,16 +178,16 @@ class ImageDecoder {
                     scale *= 2;
                 }
             } else {
-                scale = Math.min(widthScale, heightScale); // min
+                scale = Math.max(widthScale, heightScale); // min
             }
         }
 
         if (scale < 1) {
-            scale = 1;
+            scale = 1.0f;
         }
 
-        if (loggingEnabled) L.d(LOG_IMAGE_SUBSAMPLED, imageWidth, imageHeight, targetWidth, targetHeight, scale);
-        return scale;
+        if (loggingEnabled) L.d(LOG_IMAGE_SUBSAMPLED, imageWidth, imageHeight, targetWidth, targetHeight, String.valueOf(scale));
+        return (int)scale;
     }
 
     private Bitmap scaleImageExactly(Bitmap subsampledBitmap, ImageSize targetSize, ImageScaleType scaleType, ViewScaleType viewScaleType) {

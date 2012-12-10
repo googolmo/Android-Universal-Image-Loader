@@ -7,6 +7,7 @@ public final class Constants {
 
     public static final String[] IMAGES = new String[]{
             // Heavy images
+			"http://img3.douban.com/view/status/median/public/4895fc261330703.jpg",
             "http://avatar1.fanfou.com/l0/01/7k/n6.jpg?1349756400",
             "http://img3.douban.com/view/photo/photo/public/p1783522312.jpg",
             "http://img3.douban.com/view/photo/photo/public/p1783526276.jpg",
@@ -33,8 +34,6 @@ public final class Constants {
             "https://ssl.gstatic.com/android/market/com.rovio.angrybirdsseasons/hi-256-9-347dae230614238a639d21508ae492302340b2ba",
             "http://androidblaze.com/wp-content/uploads/2011/12/tablet-pc-256x256.jpg",
             "http://www.theblaze.com/wp-content/uploads/2011/08/Apple.png",
-            "http://1.bp.blogspot.com/-y-HQwQ4Kuu0/TdD9_iKIY7I/AAAAAAAAE88/3G4xiclDZD0/s1600/Twitter_Android.png",
-            "http://3.bp.blogspot.com/-nAf4IMJGpc8/TdD9OGNUHHI/AAAAAAAAE8E/VM9yU_lIgZ4/s1600/Adobe%2BReader_Android.png",
             "http://cdn.geekwire.com/wp-content/uploads/2011/05/oovoo-android.png?7794fe",
             "http://icons.iconarchive.com/icons/kocco/ndroid/128/android-market-2-icon.png",
             "http://thecustomizewindows.com/wp-content/uploads/2011/11/Nicest-Android-Live-Wallpapers.png",

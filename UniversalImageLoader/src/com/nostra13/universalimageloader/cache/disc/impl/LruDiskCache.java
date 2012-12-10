@@ -121,6 +121,7 @@ public class LruDiskCache implements DiscCacheAware {
             if (in != null) {
                 final BufferedInputStream buffIn = new BufferedInputStream(in, IO_BUFFER_SIZE);
                 if (options == null) {
+//					options = new BitmapFactory.Options();
                     bitmap = BitmapFactory.decodeStream(buffIn);
                 } else {
                     bitmap = BitmapFactory.decodeStream(buffIn, null, options);
