@@ -20,72 +20,72 @@ import com.nostra13.universalimageloader.core.assist.PauseOnScrollListener;
  */
 public class ImageGridActivity extends BaseActivity {
 
-    String[] imageUrls;
+	String[] imageUrls;
 
 	DisplayImageOptions options;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.ac_image_grid);
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.ac_image_grid);
 
-        Bundle bundle = getIntent().getExtras();
-        imageUrls = bundle.getStringArray(Extra.IMAGES);
+		Bundle bundle = getIntent().getExtras();
+		imageUrls = bundle.getStringArray(Extra.IMAGES);
 
-        options = new DisplayImageOptions.Builder()
-                .showStubImage(R.drawable.stub_image)
-                .showImageForEmptyUri(R.drawable.image_for_empty_url)
-                .cacheInMemory(true)
-                .cacheOnDisc(true)
-                .bitmapConfig(Bitmap.Config.RGB_565)
-                .build();
+		options = new DisplayImageOptions.Builder()
+			.showStubImage(R.drawable.stub_image)
+			.showImageForEmptyUri(R.drawable.image_for_empty_url)
+			.cacheInMemory()
+			.cacheOnDisc()
+			.bitmapConfig(Bitmap.Config.RGB_565)
+			.build();
 
-        GridView gridView = (GridView) findViewById(R.id.gridview);
-        gridView.setAdapter(new ImageAdapter());
-        gridView.setOnItemClickListener(new OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                startImageGalleryActivity(position);
-            }
-        });
-        gridView.setOnScrollListener(new PauseOnScrollListener(true, true));
-    }
+		GridView gridView = (GridView) findViewById(R.id.gridview);
+		gridView.setAdapter(new ImageAdapter());
+		gridView.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				startImageGalleryActivity(position);
+			}
+		});
+		gridView.setOnScrollListener(new PauseOnScrollListener(true, true));
+	}
 
-    private void startImageGalleryActivity(int position) {
-        Intent intent = new Intent(this, ImagePagerActivity.class);
-        intent.putExtra(Extra.IMAGES, imageUrls);
-        intent.putExtra(Extra.IMAGE_POSITION, position);
-        startActivity(intent);
-    }
+	private void startImageGalleryActivity(int position) {
+		Intent intent = new Intent(this, ImagePagerActivity.class);
+		intent.putExtra(Extra.IMAGES, imageUrls);
+		intent.putExtra(Extra.IMAGE_POSITION, position);
+		startActivity(intent);
+	}
 
-    public class ImageAdapter extends BaseAdapter {
-        @Override
-        public int getCount() {
-            return imageUrls.length;
-        }
+	public class ImageAdapter extends BaseAdapter {
+		@Override
+		public int getCount() {
+			return imageUrls.length;
+		}
 
-        @Override
-        public Object getItem(int position) {
-            return null;
-        }
+		@Override
+		public Object getItem(int position) {
+			return null;
+		}
 
-        @Override
-        public long getItemId(int position) {
-            return position;
-        }
+		@Override
+		public long getItemId(int position) {
+			return position;
+		}
 
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            final ImageView imageView;
-            if (convertView == null) {
-                imageView = (ImageView) getLayoutInflater().inflate(R.layout.item_grid_image, parent, false);
-            } else {
-                imageView = (ImageView) convertView;
-            }
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			final ImageView imageView;
+			if (convertView == null) {
+				imageView = (ImageView) getLayoutInflater().inflate(R.layout.item_grid_image, parent, false);
+			} else {
+				imageView = (ImageView) convertView;
+			}
 
-            imageLoader.displayImage(imageUrls[position], imageView, options);
+			imageLoader.displayImage(imageUrls[position], imageView, options);
 
-            return imageView;
-        }
-    }
+			return imageView;
+		}
+	}
 }

@@ -13,7 +13,7 @@ import com.nostra13.universalimageloader.core.ImageLoader;
  * fling). It prevents redundant loadings.<br />
  * Set it to your list view's {@link AbsListView#setOnScrollListener(OnScrollListener) setOnScrollListener(...)}.<br />
  * This listener can wrap your custom {@linkplain OnScrollListener listener}.
- *
+ * 
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
  */
 public class PauseOnScrollListener implements OnScrollListener {
@@ -24,7 +24,7 @@ public class PauseOnScrollListener implements OnScrollListener {
 
 	/**
 	 * Constructor
-	 *
+	 * 
 	 * @param pauseOnScroll Whether {@linkplain ImageLoader#pause() pause ImageLoader} during touch scrolling
 	 * @param pauseOnFling Whether {@linkplain ImageLoader#pause() pause ImageLoader} during fling
 	 */
@@ -34,7 +34,7 @@ public class PauseOnScrollListener implements OnScrollListener {
 
 	/**
 	 * Constructor
-	 *
+	 * 
 	 * @param pauseOnScroll Whether {@linkplain ImageLoader#pause() pause ImageLoader} during touch scrolling
 	 * @param pauseOnFling Whether {@linkplain ImageLoader#pause() pause ImageLoader} during fling
 	 * @param customListener Your custom {@link OnScrollListener} for {@linkplain AbsListView list view} which also will

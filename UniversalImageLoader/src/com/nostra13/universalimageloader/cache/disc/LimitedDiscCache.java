@@ -7,149 +7,126 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
 import com.nostra13.universalimageloader.core.DefaultConfigurationFactory;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 /**
  * Abstract disc cache limited by some parameter. If cache exceeds specified limit then file with the most oldest last
  * usage date will be deleted.
- *
+ * 
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
- * @see BaseDiscCache
- * @see FileNameGenerator
+ * @see com.nostra13.universalimageloader.cache.disc.BaseDiscCache
+ * @see com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator
  */
 public abstract class LimitedDiscCache extends BaseDiscCache {
 
-    private int cacheSize = 0;
+	private int cacheSize = 0;
 
-    private int sizeLimit;
+	private int sizeLimit;
 
-    private final Map<File, Long> lastUsageDates = Collections.synchronizedMap(new HashMap<File, Long>());
+	private final Map<File, Long> lastUsageDates = Collections.synchronizedMap(new HashMap<File, Long>());
 
-    /**
-     * @param cacheDir  Directory for file caching. <b>Important:</b> Specify separate folder for cached files. It's needed
-     *                  for right cache limit work.
-     * @param sizeLimit Cache limit value. If cache exceeds this limit then file with the most oldest last usage date will be
-     *                  deleted.
-     */
-    public LimitedDiscCache(File cacheDir, int sizeLimit) {
-        this(cacheDir, DefaultConfigurationFactory.createFileNameGenerator(), sizeLimit);
-    }
+	/**
+	 * @param cacheDir
+	 *            Directory for file caching. <b>Important:</b> Specify separate folder for cached files. It's needed
+	 *            for right cache limit work.
+	 * @param sizeLimit
+	 *            Cache limit value. If cache exceeds this limit then file with the most oldest last usage date will be
+	 *            deleted.
+	 */
+	public LimitedDiscCache(File cacheDir, int sizeLimit) {
+		this(cacheDir, DefaultConfigurationFactory.createFileNameGenerator(), sizeLimit);
+	}
 
-    /**
-     * @param cacheDir          Directory for file caching. <b>Important:</b> Specify separate folder for cached files. It's needed
-     *                          for right cache limit work.
-     * @param fileNameGenerator Name generator for cached files
-     * @param sizeLimit         Cache limit value. If cache exceeds this limit then file with the most oldest last usage date will be
-     *                          deleted.
-     */
-    public LimitedDiscCache(File cacheDir, FileNameGenerator fileNameGenerator, int sizeLimit) {
-        super(cacheDir, fileNameGenerator);
-        this.sizeLimit = sizeLimit;
-        calculateCacheSizeAndFillUsageMap();
-    }
+	/**
+	 * @param cacheDir
+	 *            Directory for file caching. <b>Important:</b> Specify separate folder for cached files. It's needed
+	 *            for right cache limit work.
+	 * @param fileNameGenerator
+	 *            Name generator for cached files
+	 * @param sizeLimit
+	 *            Cache limit value. If cache exceeds this limit then file with the most oldest last usage date will be
+	 *            deleted.
+	 */
+	public LimitedDiscCache(File cacheDir, FileNameGenerator fileNameGenerator, int sizeLimit) {
+		super(cacheDir, fileNameGenerator);
+		this.sizeLimit = sizeLimit;
+		calculateCacheSizeAndFillUsageMap();
+	}
 
-    private void calculateCacheSizeAndFillUsageMap() {
-        int size = 0;
-        File[] cachedFiles = getCacheDir().listFiles();
-        for (File cachedFile : cachedFiles) {
-            size += getSize(cachedFile);
-            lastUsageDates.put(cachedFile, cachedFile.lastModified());
-        }
-        cacheSize = size;
-    }
+	private void calculateCacheSizeAndFillUsageMap() {
+		int size = 0;
+		File[] cachedFiles = getCacheDir().listFiles();
+		for (File cachedFile : cachedFiles) {
+			size += getSize(cachedFile);
+			lastUsageDates.put(cachedFile, cachedFile.lastModified());
+		}
+		cacheSize = size;
+	}
 
-//    @Override
-//    public void put(String key, File file) {
-//        int valueSize = getSize(file);
-//        while (cacheSize + valueSize > sizeLimit) {
-//            int freedSize = removeNext();
-//            if (freedSize == 0) break; // cache is empty (have nothing to delete)
-//            cacheSize -= freedSize;
-//        }
-//        cacheSize += valueSize;
-//
-//        Long currentTime = System.currentTimeMillis();
-//        file.setLastModified(currentTime);
-//        lastUsageDates.put(file, currentTime);
-//    }
+	@Override
+	public void put(String key, File file) {
+		int valueSize = getSize(file);
+		while (cacheSize + valueSize > sizeLimit) {
+			int freedSize = removeNext();
+			if (freedSize == 0) break; // cache is empty (have nothing to delete)
+			cacheSize -= freedSize;
+		}
+		cacheSize += valueSize;
 
-    @Override
-    public boolean put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
-        File file = super.getFile(key);
-        int valueSize = getSize(file);
-        while (cacheSize + valueSize > sizeLimit) {
-            int freedSize = removeNext();
-            if (freedSize == 0) break; // cache is empty (have nothing to delete)
-            cacheSize -= freedSize;
-        }
-        cacheSize += valueSize;
-        if (super.put(key, bitmap, config)) {
-            Long currentTime = System.currentTimeMillis();
-            file.setLastModified(currentTime);
-            lastUsageDates.put(file, currentTime);
-            return true;
-        } else {
-            return false;
-        }
+		Long currentTime = System.currentTimeMillis();
+		file.setLastModified(currentTime);
+		lastUsageDates.put(file, currentTime);
+	}
 
-    }
+	@Override
+	public File get(String key) {
+		File file = super.get(key);
 
-    @Override
-    public Bitmap get(String key, BitmapFactory.Options options) {
-        File file = super.getFile(key);
+		Long currentTime = System.currentTimeMillis();
+		file.setLastModified(currentTime);
+		lastUsageDates.put(file, currentTime);
 
-        Long currentTime = System.currentTimeMillis();
-        file.setLastModified(currentTime);
-        lastUsageDates.put(file, currentTime);
+		return file;
+	}
 
-        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+	@Override
+	public void clear() {
+		lastUsageDates.clear();
+		cacheSize = 0;
+		super.clear();
+	}
 
-        return bitmap;
-    }
+	/** Remove next file and returns it's size */
+	private int removeNext() {
+		if (lastUsageDates.isEmpty()) {
+			return 0;
+		}
 
-    @Override
-    public void clear() {
-        lastUsageDates.clear();
-        cacheSize = 0;
-        super.clear();
-    }
+		Long oldestUsage = null;
+		File mostLongUsedFile = null;
+		Set<Entry<File, Long>> entries = lastUsageDates.entrySet();
+		synchronized (lastUsageDates) {
+			for (Entry<File, Long> entry : entries) {
+				if (mostLongUsedFile == null) {
+					mostLongUsedFile = entry.getKey();
+					oldestUsage = entry.getValue();
+				} else {
+					Long lastValueUsage = entry.getValue();
+					if (lastValueUsage < oldestUsage) {
+						oldestUsage = lastValueUsage;
+						mostLongUsedFile = entry.getKey();
+					}
+				}
+			}
+		}
 
-    /**
-     * Remove next file and returns it's size
-     */
-    private int removeNext() {
-        if (lastUsageDates.isEmpty()) {
-            return 0;
-        }
+		int fileSize = getSize(mostLongUsedFile);
+		if (mostLongUsedFile.delete()) {
+			lastUsageDates.remove(mostLongUsedFile);
+		}
+		return fileSize;
+	}
 
-        Long oldestUsage = null;
-        File mostLongUsedFile = null;
-        Set<Entry<File, Long>> entries = lastUsageDates.entrySet();
-        synchronized (lastUsageDates) {
-            for (Entry<File, Long> entry : entries) {
-                if (mostLongUsedFile == null) {
-                    mostLongUsedFile = entry.getKey();
-                    oldestUsage = entry.getValue();
-                } else {
-                    Long lastValueUsage = entry.getValue();
-                    if (lastValueUsage < oldestUsage) {
-                        oldestUsage = lastValueUsage;
-                        mostLongUsedFile = entry.getKey();
-                    }
-                }
-            }
-        }
-
-        int fileSize = getSize(mostLongUsedFile);
-        if (mostLongUsedFile.delete()) {
-            lastUsageDates.remove(mostLongUsedFile);
-        }
-        return fileSize;
-    }
-
-    protected abstract int getSize(File file);
+	protected abstract int getSize(File file);
 }

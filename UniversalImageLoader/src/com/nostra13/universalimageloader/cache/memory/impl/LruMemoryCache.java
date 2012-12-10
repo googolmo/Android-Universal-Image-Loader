@@ -18,7 +18,6 @@ import java.util.Collection;
  */
 public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 
-    public static final int DEFAULT_MEMORY_CACHE_PERCENTAGE = 25;
     private static final int DEFAULT_MEMORY_CAPACITY_FOR_DEVICES_OLDER_THAN_API_LEVEL_4 = 12;
     private LruCache<String, Bitmap> mCache;
     private int capacity;
