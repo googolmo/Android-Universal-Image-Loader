@@ -30,8 +30,8 @@ public class ImageGalleryActivity extends BaseActivity {
 		options = new DisplayImageOptions.Builder()
 			.showImageForEmptyUri(R.drawable.image_for_empty_url)
 			.showStubImage(R.drawable.stub_image)
-			.cacheInMemory()
-			.cacheOnDisc()
+			.cacheInMemory(true)
+			.cacheOnDisc(true)
 			.bitmapConfig(Bitmap.Config.RGB_565)
 			.build();
 

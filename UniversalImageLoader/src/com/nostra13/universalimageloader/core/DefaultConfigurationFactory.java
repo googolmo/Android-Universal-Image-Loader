@@ -13,7 +13,7 @@ import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
 import com.nostra13.universalimageloader.cache.disc.naming.HashCodeFileNameGenerator;
 import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
 import com.nostra13.universalimageloader.cache.memory.impl.FuzzyKeyMemoryCache;
-import com.nostra13.universalimageloader.cache.memory.impl.UsingFreqLimitedMemoryCache;
+import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
 import com.nostra13.universalimageloader.core.assist.MemoryCacheUtil;
 import com.nostra13.universalimageloader.core.display.BitmapDisplayer;
 import com.nostra13.universalimageloader.core.display.SimpleBitmapDisplayer;
@@ -42,14 +42,14 @@ public class DefaultConfigurationFactory {
 			File individualCacheDir = StorageUtils.getIndividualCacheDirectory(context);
 			return new FileCountLimitedDiscCache(individualCacheDir, discCacheFileNameGenerator, discCacheFileCount);
 		} else {
-			File cacheDir = StorageUtils.getCacheDirectory(context);
+			File cacheDir = StorageUtils.getIndividualCacheDirectory(context);
 			return new UnlimitedDiscCache(cacheDir, discCacheFileNameGenerator);
 		}
 	}
 
 	/** Create default implementation of {@link com.nostra13.universalimageloader.cache.memory.MemoryCacheAware} depends on incoming parameters */
-	public static MemoryCacheAware<String, Bitmap> createMemoryCache(int memoryCacheSize, boolean denyCacheImageMultipleSizesInMemory) {
-		MemoryCacheAware<String, Bitmap> memoryCache = new UsingFreqLimitedMemoryCache(memoryCacheSize);
+	public static MemoryCacheAware<String, Bitmap> createMemoryCache(Context context, int memoryCachePercent, boolean denyCacheImageMultipleSizesInMemory) {
+		MemoryCacheAware<String, Bitmap> memoryCache = new LruMemoryCache(context, memoryCachePercent);
 		if (denyCacheImageMultipleSizesInMemory) {
 			memoryCache = new FuzzyKeyMemoryCache<String, Bitmap>(memoryCache, MemoryCacheUtil.createFuzzyKeyComparator());
 		}

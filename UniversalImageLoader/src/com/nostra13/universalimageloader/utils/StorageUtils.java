@@ -13,7 +13,7 @@ import android.os.Environment;
  */
 public final class StorageUtils {
 
-	private static final String INDIVIDUAL_DIR_NAME = "uil-images";
+	private static final String INDIVIDUAL_DIR_NAME = "images";
 
 	private StorageUtils() {
 	}

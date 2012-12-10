@@ -35,8 +35,8 @@ public class ImageGridActivity extends BaseActivity {
 		options = new DisplayImageOptions.Builder()
 			.showStubImage(R.drawable.stub_image)
 			.showImageForEmptyUri(R.drawable.image_for_empty_url)
-			.cacheInMemory()
-			.cacheOnDisc()
+			.cacheInMemory(true)
+			.cacheOnDisc(true)
 			.bitmapConfig(Bitmap.Config.RGB_565)
 			.build();
 

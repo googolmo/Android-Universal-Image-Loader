@@ -83,8 +83,8 @@ public final class ImageLoaderConfiguration {
 	 * <li>threadPoolSize = {@link Builder#DEFAULT_THREAD_POOL_SIZE this}</li>
 	 * <li>threadPriority = {@link Builder#DEFAULT_THREAD_PRIORITY this}</li>
 	 * <li>allow to cache different sizes of image in memory</li>
-	 * <li>memoryCache = {@link UsingFreqLimitedCache} with limited memory cache size (
-	 * {@link Builder#DEFAULT_MEMORY_CACHE_SIZE this} bytes)</li>
+	 * <li>memoryCache = {@link com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache} with limited memory cache size (
+	 * {@link Builder#DEFAULT_MEMORY_CACHE_PERCENT this} bytes)</li>
 	 * <li>discCache = {@link UnlimitedDiscCache}</li>
 	 * <li>imageDownloader = {@link ImageDownloader#createDefault()}</li>
 	 * <li>discCacheFileNameGenerator = {@link FileNameGenerator#createDefault()}</li>
@@ -116,16 +116,16 @@ public final class ImageLoaderConfiguration {
 		/** {@value} */
 		public static final int DEFAULT_THREAD_PRIORITY = Thread.NORM_PRIORITY - 1;
 		/** {@value} */
-		public static final int DEFAULT_MEMORY_CACHE_SIZE = 2 * 1024 * 1024; // bytes
+		public static final int DEFAULT_MEMORY_CACHE_PERCENT = 50; // percent
 
 		private Context context;
 
 		private int maxImageWidthForMemoryCache = 0;
 		private int maxImageHeightForMemoryCache = 0;
-		private int maxImageWidthForDiscCache = 0;
-		private int maxImageHeightForDiscCache = 0;
-		private CompressFormat imageCompressFormatForDiscCache = null;
-		private int imageQualityForDiscCache = 0;
+		private int maxImageWidthForDiscCache = 2048;
+		private int maxImageHeightForDiscCache = 2048;
+		private CompressFormat imageCompressFormatForDiscCache = CompressFormat.JPEG;
+		private int imageQualityForDiscCache = 90;
 
 		private int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
 		private int threadPriority = DEFAULT_THREAD_PRIORITY;
@@ -133,8 +133,8 @@ public final class ImageLoaderConfiguration {
 		private boolean handleOutOfMemory = true;
 		private QueueProcessingType tasksProcessingType = QueueProcessingType.FIFO;
 
-		private int memoryCacheSize = DEFAULT_MEMORY_CACHE_SIZE;
-		private int discCacheSize = 0;
+		private int memoryCachePercent = DEFAULT_MEMORY_CACHE_PERCENT;
+		private int discCacheSize = 100 * 1024 * 1024;
 		private int discCacheFileCount = 0;
 
 		private MemoryCacheAware<String, Bitmap> memoryCache = null;
@@ -223,8 +223,13 @@ public final class ImageLoaderConfiguration {
 		 * <b>deny</b> it by calling <b>this</b> method: so when some image will be cached in memory then previous
 		 * cached size of this image (if it exists) will be removed from memory cache before.
 		 * */
-		public Builder denyCacheImageMultipleSizesInMemory() {
-			this.denyCacheImageMultipleSizesInMemory = true;
+//		public Builder denyCacheImageMultipleSizesInMemory() {
+//			this.denyCacheImageMultipleSizesInMemory = true;
+//			return this;
+//		}
+
+		public Builder denyCacheImageMultipleSizesInMemory(boolean value) {
+			this.denyCacheImageMultipleSizesInMemory = value;
 			return this;
 		}
 
@@ -234,8 +239,13 @@ public final class ImageLoaderConfiguration {
 		 * {@link OutOfMemoryError} occurred if you got {@link FailReason#OUT_OF_MEMORY} in
 		 * {@link ImageLoadingListener#onLoadingFailed(FailReason)}).
 		 */
-		public Builder offOutOfMemoryHandling() {
-			this.handleOutOfMemory = false;
+//		public Builder offOutOfMemoryHandling() {
+//			this.handleOutOfMemory = false;
+//			return this;
+//		}
+
+		public Builder offOutOfMemoryHandling(boolean value) {
+			this.handleOutOfMemory = value;
 			return this;
 		}
 
@@ -250,29 +260,29 @@ public final class ImageLoaderConfiguration {
 
 		/**
 		 * Sets maximum memory cache size for {@link android.graphics.Bitmap bitmaps} (in bytes).<br />
-		 * Default value - {@link #DEFAULT_MEMORY_CACHE_SIZE this}<br />
+		 * Default value - {@link #DEFAULT_MEMORY_CACHE_PERCENT this}<br />
 		 * <b>NOTE:</b> If you use this method then
 		 * {@link com.nostra13.universalimageloader.cache.memory.impl.UsingFreqLimitedMemoryCache UsingFreqLimitedCache}
 		 * will be used as memory cache. You can use {@link #memoryCache(MemoryCacheAware)} method for introduction your
 		 * own implementation of {@link MemoryCacheAware}.
 		 */
-		public Builder memoryCacheSize(int memoryCacheSize) {
-			if (memoryCacheSize <= 0) throw new IllegalArgumentException("memoryCacheSize must be a positive number");
+		public Builder memoryCachePercent(int memoryCachePercent) {
+			if (memoryCachePercent <= 0) throw new IllegalArgumentException("memoryCacheSize must be a positive number");
 			if (memoryCache != null) L.w(WARNING_MEMORY_CACHE_ALREADY_SET);
 
-			this.memoryCacheSize = memoryCacheSize;
+			this.memoryCachePercent = memoryCachePercent;
 			return this;
 		}
 
 		/**
 		 * Sets memory cache for {@link android.graphics.Bitmap bitmaps}.<br />
 		 * Default value - {@link com.nostra13.universalimageloader.cache.memory.impl.UsingFreqLimitedMemoryCache
-		 * UsingFreqLimitedCache} with limited memory cache size (size = {@link #DEFAULT_MEMORY_CACHE_SIZE this})<br />
-		 * <b>NOTE:</b> You can use {@link #memoryCacheSize(int)} method instead of this method to simplify memory cache
+		 * UsingFreqLimitedCache} with limited memory cache size (size = {@link #DEFAULT_MEMORY_CACHE_PERCENT this})<br />
+		 * <b>NOTE:</b> You can use {@link #memoryCachePercent(int)} method instead of this method to simplify memory cache
 		 * tuning.
 		 */
 		public Builder memoryCache(MemoryCacheAware<String, Bitmap> memoryCache) {
-			if (memoryCacheSize != DEFAULT_MEMORY_CACHE_SIZE) L.w(WARNING_OVERLAP_MEMORY_CACHE_SIZE);
+			if (memoryCachePercent != DEFAULT_MEMORY_CACHE_PERCENT) L.w(WARNING_OVERLAP_MEMORY_CACHE_SIZE);
 
 			this.memoryCache = memoryCache;
 			return this;
@@ -370,6 +380,11 @@ public final class ImageLoaderConfiguration {
 			return this;
 		}
 
+		public Builder enableLogging(boolean value) {
+			this.loggingEnabled = value;
+			return this;
+		}
+
 		/** Builds configured {@link ImageLoaderConfiguration} object */
 		public ImageLoaderConfiguration build() {
 			initEmptyFiledsWithDefaultValues();
@@ -384,7 +399,7 @@ public final class ImageLoaderConfiguration {
 				discCache = DefaultConfigurationFactory.createDiscCache(context, discCacheFileNameGenerator, discCacheSize, discCacheFileCount);
 			}
 			if (memoryCache == null) {
-				memoryCache = DefaultConfigurationFactory.createMemoryCache(memoryCacheSize, denyCacheImageMultipleSizesInMemory);
+				memoryCache = DefaultConfigurationFactory.createMemoryCache(context, memoryCachePercent, denyCacheImageMultipleSizesInMemory);
 			}
 			if (downloader == null) {
 				downloader = DefaultConfigurationFactory.createImageDownloader();

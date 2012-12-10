@@ -24,7 +24,7 @@ import com.nostra13.universalimageloader.core.display.SimpleBitmapDisplayer;
  * <ul>
  * <li>with {@link Builder}:<br />
  * <b>i.e.</b> :
- * <code>new {@link DisplayImageOptions}.{@link Builder#Builder() Builder()}.{@link Builder#cacheInMemory() cacheInMemory()}.
+ * <code>new {@link DisplayImageOptions}.{@link com.nostra13.universalimageloader.core.DisplayImageOptions.Builder#build()}  Builder()}.{@link Builder#cacheInMemory() cacheInMemory()}.
  * {@link Builder#showStubImage(int) showStubImage()}.{@link Builder#build() build()}</code><br />
  * </li>
  * <li>or by static method: {@link #createSimple()}</li> <br />
@@ -142,21 +142,36 @@ public final class DisplayImageOptions {
 			return this;
 		}
 
-		/** {@link android.widget.ImageView ImageView} will be reset (set <b>null</b>) before image loading start */
-		public Builder resetViewBeforeLoading() {
-			resetViewBeforeLoading = true;
+//		/** {@link android.widget.ImageView ImageView} will be reset (set <b>null</b>) before image loading start */
+//		public Builder resetViewBeforeLoading() {
+//			resetViewBeforeLoading = true;
+//			return this;
+//		}
+
+		public Builder resetViewBeforeLoading(boolean value) {
+			resetViewBeforeLoading = value;
 			return this;
 		}
 
 		/** Loaded image will be cached in memory */
-		public Builder cacheInMemory() {
+//		public Builder cacheInMemory() {
+//			cacheInMemory = true;
+//			return this;
+//		}
+
+		public Builder cacheInMemory(boolean value) {
 			cacheInMemory = true;
 			return this;
 		}
 
 		/** Loaded image will be cached on disc */
-		public Builder cacheOnDisc() {
-			cacheOnDisc = true;
+//		public Builder cacheOnDisc() {
+//			cacheOnDisc = true;
+//			return this;
+//		}
+
+		public Builder cacheOnDisc(boolean value) {
+			cacheOnDisc = value;
 			return this;
 		}
 
