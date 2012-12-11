@@ -58,6 +58,17 @@ public final class StorageUtils {
 		return individualCacheDir;
 	}
 
+	public static File getCacheDirectory(Context context, String fileDir) {
+		File cacheDir = getCacheDirectory(context);
+		File file = new File(cacheDir, fileDir);
+		if (!file.exists()) {
+			if (!file.mkdirs()) {
+				file = cacheDir;
+			}
+		}
+		return file;
+	}
+
 	/**
 	 * Returns specified application cache directory. Cache directory will be created on SD card by defined path if card
 	 * is mounted. Else - Android defines cache directory on device's file system.

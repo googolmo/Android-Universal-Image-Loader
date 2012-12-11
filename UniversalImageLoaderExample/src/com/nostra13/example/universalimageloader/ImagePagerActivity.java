@@ -5,6 +5,8 @@ import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -12,10 +14,13 @@ import android.widget.Toast;
 
 import com.nostra13.example.universalimageloader.Constants.Extra;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
+
+import java.io.File;
 
 /**
  * @author Sergey Tarasevich (nostra13[at]gmail[dot]com)
@@ -23,13 +28,16 @@ import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
 public class ImagePagerActivity extends BaseActivity {
 
 	DisplayImageOptions options;
+	private ImagePagerAdapter adapter;
+	ViewPager pager;
+	String[] imageUrls;
 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.ac_image_pager);
 
 		Bundle bundle = getIntent().getExtras();
-		String[] imageUrls = bundle.getStringArray(Extra.IMAGES);
+		imageUrls = bundle.getStringArray(Extra.IMAGES);
 		int pagerPosition = bundle.getInt(Extra.IMAGE_POSITION, 0);
 
 		options = new DisplayImageOptions.Builder()
@@ -41,9 +49,37 @@ public class ImagePagerActivity extends BaseActivity {
 			.displayer(new FadeInBitmapDisplayer(300))
 			.build();
 
-		ViewPager pager = (ViewPager) findViewById(R.id.pager);
-		pager.setAdapter(new ImagePagerAdapter(imageUrls));
+		pager = (ViewPager) findViewById(R.id.pager);
+		adapter = new ImagePagerAdapter(imageUrls);
+		pager.setAdapter(adapter);
 		pager.setCurrentItem(pagerPosition);
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		menu.add(0, Menu.FIRST, 0, "save");
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case Menu.FIRST:
+				final String uri = imageUrls[pager.getCurrentItem()];
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						File file = ImageLoader.getInstance().getImageFile(ImagePagerActivity.this, uri, null);
+						String msg = "null";
+						if (file != null) {
+							msg = file.toURI().toString();
+						}
+						Toast.makeText(ImagePagerActivity.this, msg, Toast.LENGTH_SHORT).show();
+					}
+				}).run();
+				break;
+		}
+		return super.onOptionsItemSelected(item);
 	}
 
 	private class ImagePagerAdapter extends PagerAdapter {

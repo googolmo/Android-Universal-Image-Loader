@@ -1,5 +1,6 @@
 package com.nostra13.universalimageloader.core;
 
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.view.ViewGroup.LayoutParams;
@@ -32,7 +34,9 @@ import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
 import com.nostra13.universalimageloader.core.assist.deque.LIFOLinkedBlockingDeque;
 import com.nostra13.universalimageloader.core.display.BitmapDisplayer;
 import com.nostra13.universalimageloader.core.display.FakeBitmapDisplayer;
+import com.nostra13.universalimageloader.utils.DiskLruCache.DiskLruCache;
 import com.nostra13.universalimageloader.utils.L;
+import com.nostra13.universalimageloader.utils.StorageUtils;
 
 /**
  * Singletone for image loading and displaying at {@link ImageView ImageViews}<br />
@@ -340,6 +344,45 @@ public class ImageLoader {
 		fakeImage.setScaleType(ScaleType.CENTER_CROP);
 
 		displayImage(uri, fakeImage, optionsWithFakeDisplayer, listener);
+	}
+
+	public File getImageFile(Context context, String uri, Bitmap bitmap) {
+		if (uri == null) {
+			throw new IllegalArgumentException("uri can't be null");
+		}
+		String name = "jpg";
+		Bitmap.CompressFormat format = configuration.getImageCompressFormatForDiscCache();
+		if (format.equals(Bitmap.CompressFormat.JPEG)) {
+			name = "jpg";
+		} else if (format.equals(Bitmap.CompressFormat.PNG)) {
+			name = "png";
+		}
+		File file = new File(StorageUtils.getCacheDirectory(context, "files"), "tmp." + name);
+		DiskLruCache.Snapshot snapshot = configuration.discCache.get(uri);
+		if (snapshot != null) {
+			InputStream is = snapshot.getInputStream(0);
+			if (is != null) {
+				bitmap = BitmapFactory.decodeStream(is);
+			}
+
+		}
+		if (bitmap != null) {
+			try {
+				FileOutputStream fos = new FileOutputStream(file);
+				OutputStream os = new BufferedOutputStream(fos, 8 * 1024);
+				boolean result = bitmap.compress(format, 90, os);
+				if (snapshot != null) {
+					bitmap.recycle();
+				}
+				if (result) {
+					return file;
+				}
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+
+		}
+		return null;
 	}
 
 	private void initExecutorsIfNeed() {
