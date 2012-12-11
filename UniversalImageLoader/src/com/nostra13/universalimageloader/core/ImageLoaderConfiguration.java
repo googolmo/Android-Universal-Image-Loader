@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 
 import com.nostra13.universalimageloader.cache.disc.DiscCacheAware;
+import com.nostra13.universalimageloader.cache.disc.LruDiskCache;
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiscCache;
 import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
 import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
@@ -41,7 +42,7 @@ public final class ImageLoaderConfiguration {
 	final QueueProcessingType tasksProcessingType;
 
 	final MemoryCacheAware<String, Bitmap> memoryCache;
-	final DiscCacheAware discCache;
+	final LruDiskCache discCache;
 	final ImageDownloader downloader;
 	final DisplayImageOptions defaultDisplayImageOptions;
 	final ThreadFactory displayImageThreadFactory;
@@ -146,7 +147,7 @@ public final class ImageLoaderConfiguration {
 		private int discCacheFileCount = 0;
 
 		private MemoryCacheAware<String, Bitmap> memoryCache = null;
-		private DiscCacheAware discCache = null;
+		private LruDiskCache discCache = null;
 		private FileNameGenerator discCacheFileNameGenerator = null;
 		private ImageDownloader downloader = null;
 		private DisplayImageOptions defaultDisplayImageOptions = null;
@@ -362,7 +363,7 @@ public final class ImageLoaderConfiguration {
 		 * {@link com.nostra13.universalimageloader.utils.StorageUtils#getCacheDirectory(Context)
 		 * StorageUtils.getCacheDirectory(Context)}.<br />
 		 */
-		public Builder discCache(DiscCacheAware discCache) {
+		public Builder discCache(LruDiskCache discCache) {
 			if (discCacheSize > 0) L.w(WARNING_OVERLAP_DISC_CACHE_SIZE);
 			if (discCacheFileCount > 0) L.w(WARNING_OVERLAP_DISC_CACHE_FILE_COUNT);
 			if (discCacheFileNameGenerator != null) L.w(WARNING_OVERLAP_DISC_CACHE_FILE_NAME_GENERATOR);

@@ -1,4 +1,4 @@
-package com.nostra13.universalimageloader.cache.disc.impl;
+package com.nostra13.universalimageloader.cache.disc;
 
 import android.graphics.Bitmap;
 import com.nostra13.universalimageloader.cache.disc.DiscCacheAware;

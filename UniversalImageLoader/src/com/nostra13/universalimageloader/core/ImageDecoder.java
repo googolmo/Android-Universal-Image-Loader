@@ -12,6 +12,7 @@ import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.assist.ViewScaleType;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
+import com.nostra13.universalimageloader.utils.DiskLruCache.DiskLruCache;
 import com.nostra13.universalimageloader.utils.L;
 
 /**
@@ -29,21 +30,32 @@ class ImageDecoder {
 	private static final String LOG_IMAGE_SUBSAMPLED = "Original image (%1$dx%2$d) is going to be subsampled to %3$dx%4$d view. Computed scale size - %5$d";
 	private static final String LOG_IMAGE_SCALED = "Subsampled image (%1$dx%2$d) was scaled to %3$dx%4$d";
 
-	private final URI imageUri;
+//	private final URI imageUri;
+	private InputStream inputStream;
+	private DiskLruCache.Snapshot snapshot;
 	private final ImageDownloader imageDownloader;
 	private final DisplayImageOptions displayOptions;
 
 	private boolean loggingEnabled;
 
 	/**
-	 * @param imageUri
+	 * @param snapshot
 	 *            Image URI (<b>i.e.:</b> "http://site.com/image.png", "file:///mnt/sdcard/image.png")
 	 * @param imageDownloader
 	 *            Image downloader
 	 * 
 	 */
-	ImageDecoder(URI imageUri, ImageDownloader imageDownloader, DisplayImageOptions options) {
-		this.imageUri = imageUri;
+	ImageDecoder(DiskLruCache.Snapshot snapshot, ImageDownloader imageDownloader, DisplayImageOptions options) {
+//		this.imageUri = imageUri;
+		this.snapshot = snapshot;
+		this.inputStream = null;
+		this.imageDownloader = imageDownloader;
+		this.displayOptions = options;
+	}
+
+	ImageDecoder(InputStream inputStream, ImageDownloader imageDownloader, DisplayImageOptions options) {
+		this.inputStream = inputStream;
+		this.snapshot = null;
 		this.imageDownloader = imageDownloader;
 		this.displayOptions = options;
 	}
@@ -79,13 +91,20 @@ class ImageDecoder {
 	 * @throws IOException
 	 */
 	public Bitmap decode(ImageSize targetSize, ImageScaleType scaleType, ViewScaleType viewScaleType) throws IOException {
-		Options decodeOptions = getBitmapOptionsForImageDecoding(targetSize, scaleType, viewScaleType);
-		InputStream imageStream = imageDownloader.getStream(imageUri);
-		Bitmap subsampledBitmap;
+//		Options decodeOptions = getBitmapOptionsForImageDecoding(targetSize, scaleType, viewScaleType);
+		InputStream imageStream = null;
+		if (snapshot != null) {
+			imageStream = snapshot.getInputStream(0);
+		} else {
+			imageStream = inputStream;
+		}
+		Bitmap subsampledBitmap = null;
 		try {
-			subsampledBitmap = BitmapFactory.decodeStream(imageStream, null, decodeOptions);
-		} finally {
-			imageStream.close();
+			subsampledBitmap = BitmapFactory.decodeStream(imageStream, null, new Options());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}finally {
+//			imageStream.close();
 		}
 		if (subsampledBitmap == null) {
 			return null;
@@ -114,11 +133,17 @@ class ImageDecoder {
 		// decode image size
 		Options options = new Options();
 		options.inJustDecodeBounds = true;
-		InputStream imageStream = imageDownloader.getStream(imageUri);
+		InputStream imageStream = null;
+		if (snapshot != null) {
+			imageStream = snapshot.getInputStream(0);
+		} else {
+			imageStream = inputStream;
+		}
+
 		try {
 			BitmapFactory.decodeStream(imageStream, null, options);
 		} finally {
-			imageStream.close();
+//			imageStream.close();
 		}
 
 		int scale = 1;

@@ -12,17 +12,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.widget.ImageView;
 
 import com.nostra13.universalimageloader.cache.disc.DiscCacheAware;
+import com.nostra13.universalimageloader.cache.disc.LruDiskCache;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.assist.ViewScaleType;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
+import com.nostra13.universalimageloader.utils.DiskLruCache.DiskLruCache;
 import com.nostra13.universalimageloader.utils.FileUtils;
 import com.nostra13.universalimageloader.utils.L;
 
@@ -179,16 +182,17 @@ final class LoadAndDisplayImageTask implements Runnable {
 	}
 
 	private Bitmap tryLoadBitmap() {
-		DiscCacheAware discCache = configuration.discCache;
-		File imageFile = discCache.get(uri);
+		LruDiskCache discCache = configuration.discCache;
+		DiskLruCache.Snapshot snapshot = discCache.get(uri);
+//		File imageFile = discCache.get(uri);
 
 		Bitmap bitmap = null;
 		try {
 			// Try to load image from disc cache
-			if (imageFile.exists()) {
+			if (snapshot != null) {
 				if (loggingEnabled) L.i(LOG_LOAD_IMAGE_FROM_DISC_CACHE, memoryCacheKey);
 
-				Bitmap b = decodeImage(imageFile.toURI());
+				Bitmap b = decodeImage(snapshot);
 				if (b != null) {
 					return b;
 				}
@@ -201,40 +205,67 @@ final class LoadAndDisplayImageTask implements Runnable {
 			if (options.isCacheOnDisc()) {
 				if (loggingEnabled) L.i(LOG_CACHE_IMAGE_ON_DISC, memoryCacheKey);
 
-				saveImageOnDisc(imageFile);
-				discCache.put(uri, imageFile);
-				imageUriForDecoding = imageFile.toURI();
+				Bitmap b = getBitmap(new URI(uri));
+//				saveImageOnDisc(imageFile);
+				if (b != null) {
+					discCache.put(uri, b, configuration);
+				}
+				if (snapshot != null) {
+					snapshot.close();
+				}
+				snapshot = discCache.get(uri);
+				bitmap = decodeImage(snapshot.getInputStream(0));
+//				imageUriForDecoding = imageFile.toURI();
 			} else {
 				imageUriForDecoding = new URI(uri);
+				bitmap = decodeImage(downloader.getStream(imageUriForDecoding));
 			}
 
-			bitmap = decodeImage(imageUriForDecoding);
+
 			if (bitmap == null) {
 				fireImageLoadingFailedEvent(FailReason.IO_ERROR);
 			}
 		} catch (IOException e) {
 			L.e(e);
 			fireImageLoadingFailedEvent(FailReason.IO_ERROR);
-			if (imageFile.exists()) {
-				imageFile.delete();
-			}
+//			if (sna.exists()) {
+//				imageFile.delete();
+//			}
 		} catch (OutOfMemoryError e) {
 			L.e(e);
 			fireImageLoadingFailedEvent(FailReason.OUT_OF_MEMORY);
 		} catch (Throwable e) {
 			L.e(e);
 			fireImageLoadingFailedEvent(FailReason.UNKNOWN);
+		} finally {
+			if (snapshot != null) {
+				snapshot.close();
+			}
 		}
 		return bitmap;
 	}
 
-	private Bitmap decodeImage(URI imageUri) throws IOException {
+//	private Bitmap decodeImage(URI imageUri) throws IOException {
+//		Bitmap bmp = null;
+//
+//		if (configuration.handleOutOfMemory) {
+//			bmp = decodeWithOOMHandling(imageUri);
+//		} else {
+//			ImageDecoder decoder = new ImageDecoder(imageUri, downloader, options);
+//			decoder.setLoggingEnabled(loggingEnabled);
+//			ViewScaleType viewScaleType = ViewScaleType.fromImageView(imageView);
+//			bmp = decoder.decode(targetSize, options.getImageScaleType(), viewScaleType);
+//		}
+//		return bmp;
+//	}
+
+	private Bitmap decodeImage(DiskLruCache.Snapshot snapshot) throws IOException {
 		Bitmap bmp = null;
 
 		if (configuration.handleOutOfMemory) {
-			bmp = decodeWithOOMHandling(imageUri);
+			bmp = decodeWithOOMHandling(snapshot);
 		} else {
-			ImageDecoder decoder = new ImageDecoder(imageUri, downloader, options);
+			ImageDecoder decoder = new ImageDecoder(snapshot, downloader, options);
 			decoder.setLoggingEnabled(loggingEnabled);
 			ViewScaleType viewScaleType = ViewScaleType.fromImageView(imageView);
 			bmp = decoder.decode(targetSize, options.getImageScaleType(), viewScaleType);
@@ -242,7 +273,7 @@ final class LoadAndDisplayImageTask implements Runnable {
 		return bmp;
 	}
 
-	private Bitmap decodeWithOOMHandling(URI imageUri) throws IOException {
+	private Bitmap decodeWithOOMHandling(DiskLruCache.Snapshot imageUri) throws IOException {
 		Bitmap result = null;
 		ImageDecoder decoder = new ImageDecoder(imageUri, downloader, options);
 		decoder.setLoggingEnabled(loggingEnabled);
@@ -273,38 +304,121 @@ final class LoadAndDisplayImageTask implements Runnable {
 		return result;
 	}
 
-	private void saveImageOnDisc(File targetFile) throws IOException, URISyntaxException {
+
+	private Bitmap decodeImage(InputStream inputStream) throws IOException {
+		Bitmap bmp = null;
+
+		if (configuration.handleOutOfMemory) {
+			bmp = decodeWithOOMHandling(inputStream);
+		} else {
+			ImageDecoder decoder = new ImageDecoder(inputStream, downloader, options);
+			decoder.setLoggingEnabled(loggingEnabled);
+			ViewScaleType viewScaleType = ViewScaleType.fromImageView(imageView);
+			bmp = decoder.decode(targetSize, options.getImageScaleType(), viewScaleType);
+		}
+		return bmp;
+	}
+
+	private Bitmap decodeWithOOMHandling(InputStream inputStream) throws IOException {
+		Bitmap result = null;
+		ImageDecoder decoder = new ImageDecoder(inputStream, downloader, options);
+		decoder.setLoggingEnabled(loggingEnabled);
+		for (int attempt = 1; attempt <= ATTEMPT_COUNT_TO_DECODE_BITMAP; attempt++) {
+			try {
+				ViewScaleType viewScaleType = ViewScaleType.fromImageView(imageView);
+				result = decoder.decode(targetSize, options.getImageScaleType(), viewScaleType);
+			} catch (OutOfMemoryError e) {
+				L.e(e);
+
+				switch (attempt) {
+					case 1:
+						System.gc();
+						break;
+					case 2:
+						configuration.memoryCache.clear();
+						System.gc();
+						break;
+					case 3:
+						throw e;
+				}
+				// Wait some time while GC is working
+				SystemClock.sleep(attempt * 1000);
+				continue;
+			}
+			break;
+		}
+		return result;
+	}
+
+	private Bitmap getBitmap(URI imageUri) throws IOException{
 		int width = configuration.maxImageWidthForDiscCache;
 		int height = configuration.maxImageHeightForDiscCache;
-		if (width > 0 || height > 0) {
-			// Download, decode, compress and save image
-			ImageSize targetImageSize = new ImageSize(width, height);
-			ImageDecoder decoder = new ImageDecoder(new URI(uri), downloader, options);
-			decoder.setLoggingEnabled(loggingEnabled);
-			Bitmap bmp = decoder.decode(targetImageSize, ImageScaleType.IN_SAMPLE_INT, ViewScaleType.FIT_INSIDE);
-
-			OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile), BUFFER_SIZE);
-			boolean compressedSuccessfully = bmp.compress(configuration.imageCompressFormatForDiscCache, configuration.imageQualityForDiscCache, os);
-			if (compressedSuccessfully) {
-				bmp.recycle();
-				return;
-			}
-		}
-
-		// If previous compression wasn't needed or failed
-		// Download and save original image
-		InputStream is = downloader.getStream(new URI(uri));
-		try {
-			OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile), BUFFER_SIZE);
+		InputStream is = downloader.getStream(imageUri);
+		if (is != null) {
 			try {
-				FileUtils.copyStream(is, os);
+				if (width > 0 || height > 0) {
+					ImageSize targetImageSize = new ImageSize(width, height);
+					if (loggingEnabled) {
+						L.d("load from internet and targetsize");
+					}
+
+					ImageDecoder decoder = new ImageDecoder(is, downloader, options);
+					decoder.setLoggingEnabled(loggingEnabled);
+					return decoder.decode(targetImageSize, ImageScaleType.IN_SAMPLE_INT, ViewScaleType.FIT_INSIDE);
+
+				}
+				if (loggingEnabled) {
+					L.d("load from internet and no targetsize");
+				}
+				return BitmapFactory.decodeStream(is);
+			} catch (IOException e) {
+				e.printStackTrace();
 			} finally {
-				os.close();
+				try {
+					is.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
-		} finally {
-			is.close();
 		}
-	}
+		if (loggingEnabled) {
+			L.d("bitmap is null");
+		}
+		return null;
+}
+
+//	private void saveImageOnDisc(File targetFile) throws IOException, URISyntaxException {
+//		int width = configuration.maxImageWidthForDiscCache;
+//		int height = configuration.maxImageHeightForDiscCache;
+//		if (width > 0 || height > 0) {
+//			// Download, decode, compress and save image
+//			ImageSize targetImageSize = new ImageSize(width, height);
+//			ImageDecoder decoder = new ImageDecoder(new URI(uri), downloader, options);
+//			decoder.setLoggingEnabled(loggingEnabled);
+//			Bitmap bmp = decoder.decode(targetImageSize, ImageScaleType.IN_SAMPLE_INT, ViewScaleType.FIT_INSIDE);
+//
+//			OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile), BUFFER_SIZE);
+//			boolean compressedSuccessfully = bmp.compress(configuration.imageCompressFormatForDiscCache, configuration.imageQualityForDiscCache, os);
+//			if (compressedSuccessfully) {
+//				bmp.recycle();
+//				return;
+//			}
+//		}
+//
+//		// If previous compression wasn't needed or failed
+//		// Download and save original image
+//		InputStream is = downloader.getStream(new URI(uri));
+//		try {
+//			OutputStream os = new BufferedOutputStream(new FileOutputStream(targetFile), BUFFER_SIZE);
+//			try {
+//				FileUtils.copyStream(is, os);
+//			} finally {
+//				os.close();
+//			}
+//		} finally {
+//			is.close();
+//		}
+//	}
 
 	private void fireImageLoadingFailedEvent(final FailReason failReason) {
 		if (!Thread.interrupted()) {

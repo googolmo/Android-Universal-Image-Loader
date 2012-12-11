@@ -22,6 +22,7 @@ import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 
 import com.nostra13.universalimageloader.cache.disc.DiscCacheAware;
+import com.nostra13.universalimageloader.cache.disc.LruDiskCache;
 import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
 import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
@@ -221,7 +222,7 @@ public class ImageLoader {
 			initExecutorsIfNeed();
 			ImageLoadingInfo imageLoadingInfo = new ImageLoadingInfo(uri, imageView, targetSize, options, listener, getLockForUri(uri));
 			LoadAndDisplayImageTask displayImageTask = new LoadAndDisplayImageTask(configuration, imageLoadingInfo, new Handler());
-			boolean isImageCachedOnDisc = configuration.discCache.get(uri).exists();
+			boolean isImageCachedOnDisc = configuration.discCache.get(uri) != null;
 			if (isImageCachedOnDisc) {
 				cachedImageLoadingExecutor.submit(displayImageTask);
 			} else {
@@ -373,7 +374,7 @@ public class ImageLoader {
 	}
 
 	/** Returns disc cache */
-	public DiscCacheAware getDiscCache() {
+	public LruDiskCache getDiscCache() {
 		return configuration.discCache;
 	}
 
