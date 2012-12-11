@@ -97,6 +97,14 @@ public final class ImageLoaderConfiguration {
 		return new Builder(context).build();
 	}
 
+	public CompressFormat getImageCompressFormatForDiscCache() {
+		return this.imageCompressFormatForDiscCache;
+	}
+
+	public int getImageQualityForDiscCache() {
+		return this.imageQualityForDiscCache;
+	}
+
 	/**
 	 * Builder for {@link ImageLoaderConfiguration}
 	 * 
