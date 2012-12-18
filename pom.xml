@@ -7,7 +7,7 @@
     <groupId>com.d.imageloader</groupId>
     <artifactId>imageloader-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.7.0.2-SNAPSHOT</version>
+    <version>1.7.0.1-SNAPSHOT</version>
     <modules>
         <module>UniversalImageLoaderExample</module>
         <module>UniversalImageLoader</module>
