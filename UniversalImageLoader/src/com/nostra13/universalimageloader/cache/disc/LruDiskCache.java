@@ -60,7 +60,7 @@ public class LruDiskCache{
 
 	private void init(File cacheDir, long limitSize) {
 		try {
-			mDiskCache = DiskLruCache.open(cacheDir, APP_VERSION, VALUE_COUNT, limitSize);
+			mDiskCache = DiskLruCache.open(cacheDir, APP_VERSION, limitSize);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -112,6 +112,7 @@ public class LruDiskCache{
 	public DiskLruCache.Snapshot get(String key) {
 		key = this.fileNameGenerator.generate(key);
 		try {
+            DiskLruCache.Snapshot s = mDiskCache.get(key);
 			return mDiskCache.get(key);
 		} catch (IOException e) {
 			e.printStackTrace();

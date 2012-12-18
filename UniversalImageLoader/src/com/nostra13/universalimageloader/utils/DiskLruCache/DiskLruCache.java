@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 /**
  * A cache that uses a bounded amount of space on a filesystem. Each cache
  * entry has a string key and a fixed number of values. Each key must match
- * the regex <strong>[a-z0-9_]{1,64}</strong>. Values are byte sequences,
+ * the regex <strong>[a-z0-9_-]{1,64}</strong>. Values are byte sequences,
  * accessible as streams or files. Each value must be between {@code 0} and
  * {@code Integer.MAX_VALUE} bytes in length.
  *
@@ -92,7 +92,7 @@ public final class DiskLruCache implements Closeable {
     static final String MAGIC = "libcore.io.DiskLruCache";
     static final String VERSION_1 = "1";
     static final long ANY_SEQUENCE_NUMBER = -1;
-    static final Pattern LEGAL_KEY_PATTERN = Pattern.compile("[a-z0-9_]{1,64}");
+    static final Pattern LEGAL_KEY_PATTERN = Pattern.compile("[a-z0-9_-]{1,64}");
     private static final String CLEAN = "CLEAN";
     private static final String DIRTY = "DIRTY";
     private static final String REMOVE = "REMOVE";
@@ -191,21 +191,17 @@ public final class DiskLruCache implements Closeable {
      *
      * @param directory a writable directory
      * @param appVersion
-     * @param valueCount the number of values per cache entry. Must be positive.
      * @param maxSize the maximum number of bytes this cache should use to store
      * @throws java.io.IOException if reading or writing the cache directory fails
      */
-    public static DiskLruCache open(File directory, int appVersion, int valueCount, long maxSize)
+    public static DiskLruCache open(File directory, int appVersion, long maxSize)
             throws IOException {
         if (maxSize <= 0) {
             throw new IllegalArgumentException("maxSize <= 0");
         }
-        if (valueCount <= 0) {
-            throw new IllegalArgumentException("valueCount <= 0");
-        }
 
         // prefer to pick up where we left off
-        DiskLruCache cache = new DiskLruCache(directory, appVersion, valueCount, maxSize);
+        DiskLruCache cache = new DiskLruCache(directory, appVersion, 1, maxSize);
         if (cache.journalFile.exists()) {
             try {
                 cache.readJournal();
@@ -221,7 +217,7 @@ public final class DiskLruCache implements Closeable {
 
         // create a new empty cache
         directory.mkdirs();
-        cache = new DiskLruCache(directory, appVersion, valueCount, maxSize);
+        cache = new DiskLruCache(directory, appVersion, 1, maxSize);
         cache.rebuildJournal();
         return cache;
     }
@@ -302,8 +298,8 @@ public final class DiskLruCache implements Closeable {
             } else {
                 entry.currentEditor = null;
                 for (int t = 0; t < valueCount; t++) {
-                    deleteIfExists(entry.getCleanFile(t));
-                    deleteIfExists(entry.getDirtyFile(t));
+                    deleteIfExists(entry.getCleanFile());
+                    deleteIfExists(entry.getDirtyFile());
                 }
                 i.remove();
             }
@@ -381,7 +377,7 @@ public final class DiskLruCache implements Closeable {
         InputStream[] ins = new InputStream[valueCount];
         try {
             for (int i = 0; i < valueCount; i++) {
-                ins[i] = new FileInputStream(entry.getCleanFile(i));
+                ins[i] = new FileInputStream(entry.getCleanFile());
             }
         } catch (FileNotFoundException e) {
             // a file must have been deleted manually!
@@ -396,41 +392,6 @@ public final class DiskLruCache implements Closeable {
 
         return new Snapshot(key, entry.sequenceNumber, ins, entry.lengths);
     }
-
-	public synchronized File getFile(String key) throws IOException {
-		checkNotClosed();
-		validateKey(key);
-		Entry entry = lruEntries.get(key);
-		if (entry == null) {
-			return null;
-		}
-
-		if (!entry.readable) {
-			return null;
-		}
-
-//        /*
-//         * Open all streams eagerly to guarantee that we see a single published
-//         * snapshot. If we opened streams lazily then the streams could come
-//         * from different edits.
-//         */
-//		InputStream[] ins = new InputStream[valueCount];
-//		try {
-//			for (int i = 0; i < valueCount; i++) {
-//				ins[i] = new FileInputStream(entry.getCleanFile(i));
-//			}
-//		} catch (FileNotFoundException e) {
-//			// a file must have been deleted manually!
-//			return null;
-//		}
-
-		redundantOpCount++;
-		journalWriter.append(READ + ' ' + key + '\n');
-		if (journalRebuildRequired()) {
-			executorService.submit(cleanupCallable);
-		}
-		return entry.getCleanFile(0);
-	}
 
     /**
      * Returns an editor for the entry named {@code key}, or null if another
@@ -510,7 +471,7 @@ public final class DiskLruCache implements Closeable {
                     editor.abort();
                     throw new IllegalStateException("Newly created entry didn't create value for index " + i);
                 }
-                if (!entry.getDirtyFile(i).exists()) {
+                if (!entry.getDirtyFile().exists()) {
                     editor.abort();
                     return;
                 }
@@ -518,10 +479,10 @@ public final class DiskLruCache implements Closeable {
         }
 
         for (int i = 0; i < valueCount; i++) {
-            File dirty = entry.getDirtyFile(i);
+            File dirty = entry.getDirtyFile();
             if (success) {
                 if (dirty.exists()) {
-                    File clean = entry.getCleanFile(i);
+                    File clean = entry.getCleanFile();
                     dirty.renameTo(clean);
                     long oldLength = entry.lengths[i];
                     long newLength = clean.length();
@@ -576,7 +537,7 @@ public final class DiskLruCache implements Closeable {
         }
 
         for (int i = 0; i < valueCount; i++) {
-            File file = entry.getCleanFile(i);
+            File file = entry.getCleanFile();
             if (!file.delete()) {
                 throw new IOException("failed to delete " + file);
             }
@@ -655,7 +616,7 @@ public final class DiskLruCache implements Closeable {
         Matcher matcher = LEGAL_KEY_PATTERN.matcher(key);
         if (!matcher.matches()) {
             throw new IllegalArgumentException(
-                    "keys must match regex [a-z0-9_]{1,64}: \"" + key + "\"");
+                    "keys must match regex [a-z0-9_-]{1,64}: \"" + key + "\"");
         }
     }
 
@@ -677,6 +638,15 @@ public final class DiskLruCache implements Closeable {
             this.sequenceNumber = sequenceNumber;
             this.ins = ins;
             this.lengths = lengths;
+        }
+
+        public File getFile() {
+            try {
+                return edit().entry.getCleanFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
 
         /**
@@ -750,7 +720,7 @@ public final class DiskLruCache implements Closeable {
                     return null;
                 }
                 try {
-                    return new FileInputStream(entry.getCleanFile(index));
+                    return new FileInputStream(entry.getCleanFile());
                 } catch (FileNotFoundException e) {
                     return null;
                 }
@@ -781,7 +751,7 @@ public final class DiskLruCache implements Closeable {
                 if (!entry.readable) {
                   written[index] = true;
                 }
-                File dirtyFile = entry.getDirtyFile(index);
+                File dirtyFile = entry.getDirtyFile();
                 FileOutputStream outputStream;
                 try {
                     outputStream = new FileOutputStream(dirtyFile);
@@ -931,12 +901,12 @@ public final class DiskLruCache implements Closeable {
             throw new IOException("unexpected journal line: " + java.util.Arrays.toString(strings));
         }
 
-        public File getCleanFile(int i) {
-            return new File(directory, key + "." + i);
+        public File getCleanFile() {
+            return new File(directory, key + ".jpg");
         }
 
-        public File getDirtyFile(int i) {
-            return new File(directory, key + "." + i + ".tmp");
+        public File getDirtyFile() {
+            return new File(directory, key + ".jpg.tmp");
         }
     }
 }

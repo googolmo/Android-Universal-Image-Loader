@@ -69,7 +69,7 @@ public class ImagePagerActivity extends BaseActivity {
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						File file = ImageLoader.getInstance().getImageFile(ImagePagerActivity.this, uri, null);
+						File file = ImageLoader.getInstance().getImage(ImagePagerActivity.this, uri);
 						String msg = "null";
 						if (file != null) {
 							msg = file.toURI().toString();
