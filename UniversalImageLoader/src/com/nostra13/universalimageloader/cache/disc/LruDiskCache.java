@@ -112,7 +112,6 @@ public class LruDiskCache{
 	public DiskLruCache.Snapshot get(String key) {
 		key = this.fileNameGenerator.generate(key);
 		try {
-            DiskLruCache.Snapshot s = mDiskCache.get(key);
 			return mDiskCache.get(key);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -127,4 +126,10 @@ public class LruDiskCache{
 			e.printStackTrace();
 		}
 	}
+
+    public File getFile(String key) {
+        key = this.fileNameGenerator.generate(key);
+        return mDiskCache.getFile(key);
+    }
+
 }

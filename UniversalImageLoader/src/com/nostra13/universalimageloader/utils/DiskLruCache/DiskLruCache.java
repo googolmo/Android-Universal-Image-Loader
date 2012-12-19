@@ -640,15 +640,6 @@ public final class DiskLruCache implements Closeable {
             this.lengths = lengths;
         }
 
-        public File getFile() {
-            try {
-                return edit().entry.getCleanFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
         /**
          * Returns an editor for this snapshot's entry, or null if either the
          * entry has changed since this snapshot was created or if another edit
@@ -850,6 +841,10 @@ public final class DiskLruCache implements Closeable {
                 }
             }
         }
+    }
+
+    public File getFile(String key) {
+        return new Entry(key).getCleanFile();
     }
 
     private final class Entry {

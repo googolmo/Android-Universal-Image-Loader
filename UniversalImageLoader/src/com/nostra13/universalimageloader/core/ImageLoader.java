@@ -318,8 +318,8 @@ public class ImageLoader {
         if (uri == null) {
             throw new IllegalArgumentException("uri can't be null");
         }
-        DiskLruCache.Snapshot snapshot = configuration.discCache.get(uri);
-        return snapshot.getFile();
+        File imageFile = configuration.discCache.getFile(uri);
+        return imageFile;
     }
 
     @Deprecated
