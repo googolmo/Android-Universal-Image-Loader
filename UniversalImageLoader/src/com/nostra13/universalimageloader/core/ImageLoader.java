@@ -362,6 +362,25 @@ public class ImageLoader {
         return null;
     }
 
+    /**
+     * 判断一个Uri是否在缓存中存在
+     * @param key uri
+     * @return true存在 false 不存在
+     */
+    public boolean isCached(String key) {
+        boolean result = false;
+        if (getMemoryCache().get(key) != null) {
+            result = true;
+        } else {
+            DiskLruCache.Snapshot snapshot = getDiscCache().get(key);
+            if (snapshot != null) {
+                result = true;
+            }
+            snapshot.close();
+        }
+        return result;
+    }
+
     private void initExecutorsIfNeed() {
         if (imageLoadingExecutor == null || imageLoadingExecutor.isShutdown()) {
             imageLoadingExecutor = createExecutor();
