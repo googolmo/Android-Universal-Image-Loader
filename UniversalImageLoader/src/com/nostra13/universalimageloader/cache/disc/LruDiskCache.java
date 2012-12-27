@@ -132,4 +132,12 @@ public class LruDiskCache{
         return mDiskCache.getFile(key);
     }
 
+    /**
+     * 获得DiskLruCache
+     * @return DiskLruCache实例
+     */
+    public DiskLruCache getDiskCache() {
+        return mDiskCache;
+    }
+
 }
