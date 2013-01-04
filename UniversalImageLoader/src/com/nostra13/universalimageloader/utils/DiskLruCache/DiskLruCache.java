@@ -240,13 +240,16 @@ public final class DiskLruCache implements Closeable {
                         + magic + ", " + version + ", " + valueCountString + ", " + blank + "]");
             }
 
+            int lineCoount = 0;
             while (true) {
                 try {
                     readJournalLine(reader.readLine());
+                    lineCoount ++;
                 } catch (EOFException endOfJournal) {
                     break;
                 }
             }
+            redundantOpCount = lineCoount - lruEntries.size();
         } finally {
             IoUtils.closeQuietly(reader);
         }
@@ -538,7 +541,7 @@ public final class DiskLruCache implements Closeable {
 
         for (int i = 0; i < valueCount; i++) {
             File file = entry.getCleanFile();
-            if (!file.delete()) {
+            if (file.exists() && !file.delete()) {
                 throw new IOException("failed to delete " + file);
             }
             size -= entry.lengths[i];

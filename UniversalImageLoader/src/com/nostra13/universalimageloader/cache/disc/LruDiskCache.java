@@ -75,8 +75,9 @@ public class LruDiskCache{
 				return false;
 			}
 			if (writeBitmapToFile(bitmap, editor, config)) {
-				mDiskCache.flush();
+//				mDiskCache.flush();
 				editor.commit();
+                mDiskCache.flush();
 				return true;
 			} else {
 				editor.abort();
@@ -113,7 +114,7 @@ public class LruDiskCache{
 		key = this.fileNameGenerator.generate(key);
 		try {
 			return mDiskCache.get(key);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;
@@ -122,7 +123,7 @@ public class LruDiskCache{
 	public void clear() {
 		try {
 			mDiskCache.delete();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

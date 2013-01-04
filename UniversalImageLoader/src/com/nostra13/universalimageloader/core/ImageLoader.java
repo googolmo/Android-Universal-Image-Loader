@@ -375,8 +375,9 @@ public class ImageLoader {
             DiskLruCache.Snapshot snapshot = getDiscCache().get(key);
             if (snapshot != null) {
                 result = true;
+                snapshot.close();
             }
-            snapshot.close();
+
         }
         return result;
     }
