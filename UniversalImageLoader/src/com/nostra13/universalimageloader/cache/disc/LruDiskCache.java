@@ -17,115 +17,119 @@ import java.io.OutputStream;
  * Date: 12-12-11
  * Time: 下午3:49
  */
-public class LruDiskCache{
+public class LruDiskCache {
 
-	private DiskLruCache mDiskCache;
-	private static final long DISK_CACHE_SIZE = 1024 * 1024 * 25; //25MB
-	private static final int APP_VERSION = 1;
-	private static final int VALUE_COUNT = 1;
-	public static final int IO_BUFFER_SIZE = 8 * 1024;
-	private File mCacheDir;
-	private FileNameGenerator fileNameGenerator;
+    private DiskLruCache mDiskCache;
+    private static final long DISK_CACHE_SIZE = 1024 * 1024 * 25; //25MB
+    private static final int APP_VERSION = 1;
+    private static final int VALUE_COUNT = 1;
+    public static final int IO_BUFFER_SIZE = 8 * 1024;
+    private File mCacheDir;
+    private FileNameGenerator fileNameGenerator;
+    private long limitSize;
 
-	public LruDiskCache(File cacheDir) {
-		init(cacheDir, DISK_CACHE_SIZE);
-		this.fileNameGenerator = DefaultConfigurationFactory.createFileNameGenerator();
+    public LruDiskCache(File cacheDir) {
+        init(cacheDir, DISK_CACHE_SIZE);
+        this.fileNameGenerator = DefaultConfigurationFactory.createFileNameGenerator();
 
-	}
+    }
 
-	public LruDiskCache(File cacheDir, FileNameGenerator fileNameGenerator) {
-		init(cacheDir, DISK_CACHE_SIZE);
-		if (fileNameGenerator != null) {
-			this.fileNameGenerator = fileNameGenerator;
-		} else {
-			this.fileNameGenerator = DefaultConfigurationFactory.createFileNameGenerator();
-		}
+    public LruDiskCache(File cacheDir, FileNameGenerator fileNameGenerator) {
+        init(cacheDir, DISK_CACHE_SIZE);
+        if (fileNameGenerator != null) {
+            this.fileNameGenerator = fileNameGenerator;
+        } else {
+            this.fileNameGenerator = DefaultConfigurationFactory.createFileNameGenerator();
+        }
 
-	}
+    }
 
-	public LruDiskCache(File cacheDir, long limitSize) {
-		init(cacheDir, limitSize);
-		this.fileNameGenerator = DefaultConfigurationFactory.createFileNameGenerator();
-	}
+    public LruDiskCache(File cacheDir, long limitSize) {
+        init(cacheDir, limitSize);
+        this.fileNameGenerator = DefaultConfigurationFactory.createFileNameGenerator();
+    }
 
-	public LruDiskCache(File cacheDir, long limitSize, FileNameGenerator fileNameGenerator) {
-		init(cacheDir, limitSize);
-		if (fileNameGenerator != null) {
-			this.fileNameGenerator = fileNameGenerator;
-		} else {
-			this.fileNameGenerator = DefaultConfigurationFactory.createFileNameGenerator();
-		}
+    public LruDiskCache(File cacheDir, long limitSize, FileNameGenerator fileNameGenerator) {
+        init(cacheDir, limitSize);
+        if (fileNameGenerator != null) {
+            this.fileNameGenerator = fileNameGenerator;
+        } else {
+            this.fileNameGenerator = DefaultConfigurationFactory.createFileNameGenerator();
+        }
 
-	}
+    }
 
-	private void init(File cacheDir, long limitSize) {
-		try {
-			mDiskCache = DiskLruCache.open(cacheDir, APP_VERSION, limitSize);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+    private void init(File cacheDir, long limitSize) {
+        this.limitSize = limitSize;
+        this.mCacheDir = cacheDir;
+        try {
+            mDiskCache = DiskLruCache.open(cacheDir, APP_VERSION, 1, limitSize);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	public boolean put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
-		DiskLruCache.Editor editor = null;
-		key = this.fileNameGenerator.generate(key);
-		try {
-			editor = mDiskCache.edit(key);
-			if (editor == null) {
-				return false;
-			}
-			if (writeBitmapToFile(bitmap, editor, config)) {
-				mDiskCache.flush();
-				editor.commit();
-				return true;
-			} else {
-				editor.abort();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			try {
-				if (editor != null) {
-					editor.abort();
-				}
-			} catch (IOException ignored) {
-				ignored.printStackTrace();
-			}
-		}
-		return false;
+    public boolean put(String key, Bitmap bitmap, ImageLoaderConfiguration config) {
+        DiskLruCache.Editor editor = null;
+        key = this.fileNameGenerator.generate(key);
+        try {
+            editor = mDiskCache.edit(key);
+            if (editor == null) {
+                return false;
+            }
+            if (writeBitmapToFile(bitmap, editor, config)) {
+                mDiskCache.flush();
+                editor.commit();
+                return true;
+            } else {
+                editor.abort();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            try {
+                if (editor != null) {
+                    editor.abort();
+                }
+            } catch (IOException ignored) {
+                ignored.printStackTrace();
+            }
+        }
+        return false;
 
 
-	}
+    }
 
-	private boolean writeBitmapToFile(Bitmap bitmap, DiskLruCache.Editor editor, ImageLoaderConfiguration config) throws IOException {
-		OutputStream out = null;
-		try {
-			out = new BufferedOutputStream(editor.newOutputStream(0), IO_BUFFER_SIZE);
-			return bitmap.compress(config.getImageCompressFormatForDiscCache()
-					, config.getImageQualityForDiscCache(), out);
-		} finally {
-			if (out != null) {
-				out.close();
-			}
-		}
-	}
+    private boolean writeBitmapToFile(Bitmap bitmap, DiskLruCache.Editor editor, ImageLoaderConfiguration config) throws IOException {
+        OutputStream out = null;
+        try {
+            out = new BufferedOutputStream(editor.newOutputStream(0), IO_BUFFER_SIZE);
+            return bitmap.compress(config.getImageCompressFormatForDiscCache()
+                    , config.getImageQualityForDiscCache(), out);
+        } finally {
+            if (out != null) {
+                out.close();
+            }
+        }
+    }
 
-	public DiskLruCache.Snapshot get(String key) {
-		key = this.fileNameGenerator.generate(key);
-		try {
-			return mDiskCache.get(key);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
+    public DiskLruCache.Snapshot get(String key) {
+        key = this.fileNameGenerator.generate(key);
+        try {
+            return mDiskCache.get(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-	public void clear() {
-		try {
-			mDiskCache.delete();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    public void clear() {
+        try {
+            mDiskCache.delete();
+            mDiskCache = DiskLruCache.open(this.mCacheDir, APP_VERSION, 1, limitSize);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public File getFile(String key) {
         key = this.fileNameGenerator.generate(key);
@@ -134,6 +138,7 @@ public class LruDiskCache{
 
     /**
      * 获得DiskLruCache
+     *
      * @return DiskLruCache实例
      */
     public DiskLruCache getDiskCache() {

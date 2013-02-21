@@ -76,12 +76,22 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 
     @Override
     public Bitmap get(String key) {
-        return mCache.get(key);
+        Bitmap bitmap = mCache.get(key);
+        if (bitmap != null && bitmap.isRecycled()) {
+            mCache.remove(key);
+            bitmap = null;
+        }
+        return bitmap;
     }
 
     @Override
     public void remove(String key) {
+        Bitmap bitmap = mCache.get(key);
+        if (bitmap != null && !bitmap.isRecycled()) {
+            bitmap.recycle();
+        }
         mCache.remove(key);
+
     }
 
     @Override

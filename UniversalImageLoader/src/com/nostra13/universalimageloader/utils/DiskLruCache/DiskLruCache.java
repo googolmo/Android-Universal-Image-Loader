@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,6 +88,7 @@ import java.util.regex.Pattern;
 public final class DiskLruCache implements Closeable {
     static final String JOURNAL_FILE = "journal";
     static final String JOURNAL_FILE_TMP = "journal.tmp";
+    static final String JOURNAL_FILE_BKP = "journal.bkp";
     static final String MAGIC = "libcore.io.DiskLruCache";
     static final String VERSION_1 = "1";
     static final long ANY_SEQUENCE_NUMBER = -1;
@@ -141,6 +141,7 @@ public final class DiskLruCache implements Closeable {
     private final File directory;
     private final File journalFile;
     private final File journalFileTmp;
+    private final File journalFileBkp;
     private final int appVersion;
     private long maxSize;
     private final int valueCount;
@@ -181,6 +182,7 @@ public final class DiskLruCache implements Closeable {
         this.appVersion = appVersion;
         this.journalFile = new File(directory, JOURNAL_FILE);
         this.journalFileTmp = new File(directory, JOURNAL_FILE_TMP);
+        this.journalFileBkp = new File(directory, JOURNAL_FILE_BKP);
         this.valueCount = valueCount;
         this.maxSize = maxSize;
     }
@@ -191,22 +193,39 @@ public final class DiskLruCache implements Closeable {
      *
      * @param directory a writable directory
      * @param appVersion
+     * @param valueCount the number of values per cache entry. Must be positive.
      * @param maxSize the maximum number of bytes this cache should use to store
      * @throws java.io.IOException if reading or writing the cache directory fails
      */
-    public static DiskLruCache open(File directory, int appVersion, long maxSize)
+    public static DiskLruCache open(File directory, int appVersion, int valueCount, long maxSize)
             throws IOException {
         if (maxSize <= 0) {
             throw new IllegalArgumentException("maxSize <= 0");
         }
+        if (valueCount <= 0) {
+            throw new IllegalArgumentException("valueCount <= 0");
+        }
+
+        // if a bkp file exists, use it instead
+        File bkpFile = new File(directory, JOURNAL_FILE_BKP);
+        if (bkpFile.exists()) {
+            File journalFile = new File(directory, JOURNAL_FILE);
+            // if journal file also exists just delete backup file
+            if (journalFile.exists()) {
+                bkpFile.delete();
+            } else {
+                renameTo(bkpFile, journalFile, false);
+            }
+        }
 
         // prefer to pick up where we left off
-        DiskLruCache cache = new DiskLruCache(directory, appVersion, 1, maxSize);
+        DiskLruCache cache = new DiskLruCache(directory, appVersion, valueCount, maxSize);
         if (cache.journalFile.exists()) {
             try {
                 cache.readJournal();
                 cache.processJournal();
-                cache.journalWriter = new BufferedWriter(new FileWriter(cache.journalFile, true));
+                cache.journalWriter = new BufferedWriter(new OutputStreamWriter(
+                        new FileOutputStream(cache.journalFile, true), Charsets.US_ASCII));
                 return cache;
             } catch (IOException journalIsCorrupt) {
                 System.out.println("DiskLruCache " + directory + " is corrupt: "
@@ -217,7 +236,7 @@ public final class DiskLruCache implements Closeable {
 
         // create a new empty cache
         directory.mkdirs();
-        cache = new DiskLruCache(directory, appVersion, 1, maxSize);
+        cache = new DiskLruCache(directory, appVersion, valueCount, maxSize);
         cache.rebuildJournal();
         return cache;
     }
@@ -240,31 +259,38 @@ public final class DiskLruCache implements Closeable {
                         + magic + ", " + version + ", " + valueCountString + ", " + blank + "]");
             }
 
-            int lineCoount = 0;
+            int lineCount = 0;
             while (true) {
                 try {
                     readJournalLine(reader.readLine());
-                    lineCoount ++;
+                    lineCount++;
                 } catch (EOFException endOfJournal) {
                     break;
                 }
             }
-            redundantOpCount = lineCoount - lruEntries.size();
+            redundantOpCount = lineCount - lruEntries.size();
         } finally {
             IoUtils.closeQuietly(reader);
         }
     }
 
     private void readJournalLine(String line) throws IOException {
-        String[] parts = line.split(" ");
-        if (parts.length < 2) {
+        int firstSpace = line.indexOf(' ');
+        if (firstSpace == -1) {
             throw new IOException("unexpected journal line: " + line);
         }
 
-        String key = parts[1];
-        if (parts[0].equals(REMOVE) && parts.length == 2) {
-            lruEntries.remove(key);
-            return;
+        int keyBegin = firstSpace + 1;
+        int secondSpace = line.indexOf(' ', keyBegin);
+        final String key;
+        if (secondSpace == -1) {
+            key = line.substring(keyBegin);
+            if (firstSpace == REMOVE.length() && line.startsWith(REMOVE)) {
+                lruEntries.remove(key);
+                return;
+            }
+        } else {
+            key = line.substring(keyBegin, secondSpace);
         }
 
         Entry entry = lruEntries.get(key);
@@ -273,13 +299,14 @@ public final class DiskLruCache implements Closeable {
             lruEntries.put(key, entry);
         }
 
-        if (parts[0].equals(CLEAN) && parts.length == 2 + valueCount) {
+        if (secondSpace != -1 && firstSpace == CLEAN.length() && line.startsWith(CLEAN)) {
+            String[] parts = line.substring(secondSpace + 1).split(" ");
             entry.readable = true;
             entry.currentEditor = null;
-            entry.setLengths(Arrays.copyOfRange(parts, 2, parts.length));
-        } else if (parts[0].equals(DIRTY) && parts.length == 2) {
+            entry.setLengths(parts);
+        } else if (secondSpace == -1 && firstSpace == DIRTY.length() && line.startsWith(DIRTY)) {
             entry.currentEditor = new Editor(entry);
-        } else if (parts[0].equals(READ) && parts.length == 2) {
+        } else if (secondSpace == -1 && firstSpace == READ.length() && line.startsWith(READ)) {
             // this work was already done by calling lruEntries.get()
         } else {
             throw new IOException("unexpected journal line: " + line);
@@ -301,8 +328,8 @@ public final class DiskLruCache implements Closeable {
             } else {
                 entry.currentEditor = null;
                 for (int t = 0; t < valueCount; t++) {
-                    deleteIfExists(entry.getCleanFile());
-                    deleteIfExists(entry.getDirtyFile());
+                    deleteIfExists(entry.getCleanFile(t));
+                    deleteIfExists(entry.getDirtyFile(t));
                 }
                 i.remove();
             }
@@ -318,28 +345,38 @@ public final class DiskLruCache implements Closeable {
             journalWriter.close();
         }
 
-        Writer writer = new BufferedWriter(new FileWriter(journalFileTmp));
-        writer.write(MAGIC);
-        writer.write("\n");
-        writer.write(VERSION_1);
-        writer.write("\n");
-        writer.write(Integer.toString(appVersion));
-        writer.write("\n");
-        writer.write(Integer.toString(valueCount));
-        writer.write("\n");
-        writer.write("\n");
+        Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(journalFileTmp), Charsets.US_ASCII));
+        try {
+            writer.write(MAGIC);
+            writer.write("\n");
+            writer.write(VERSION_1);
+            writer.write("\n");
+            writer.write(Integer.toString(appVersion));
+            writer.write("\n");
+            writer.write(Integer.toString(valueCount));
+            writer.write("\n");
+            writer.write("\n");
 
-        for (Entry entry : lruEntries.values()) {
-            if (entry.currentEditor != null) {
-                writer.write(DIRTY + ' ' + entry.key + '\n');
-            } else {
-                writer.write(CLEAN + ' ' + entry.key + entry.getLengths() + '\n');
+            for (Entry entry : lruEntries.values()) {
+                if (entry.currentEditor != null) {
+                    writer.write(DIRTY + ' ' + entry.key + '\n');
+                } else {
+                    writer.write(CLEAN + ' ' + entry.key + entry.getLengths() + '\n');
+                }
             }
+        } finally {
+            writer.close();
         }
 
-        writer.close();
-        journalFileTmp.renameTo(journalFile);
-        journalWriter = new BufferedWriter(new FileWriter(journalFile, true));
+        if (journalFile.exists()) {
+          renameTo(journalFile, journalFileBkp, true);
+        }
+        renameTo(journalFileTmp, journalFile, false);
+        journalFileBkp.delete();
+
+        journalWriter = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(journalFile, true), Charsets.US_ASCII));
     }
 
     private static void deleteIfExists(File file) throws IOException {
@@ -351,6 +388,16 @@ public final class DiskLruCache implements Closeable {
             }
         }*/
         if (file.exists() && !file.delete()) {
+            throw new IOException();
+        }
+    }
+
+    private static void renameTo(File from, File to, boolean deleteDestination)
+            throws IOException {
+        if (deleteDestination) {
+            deleteIfExists(to);
+        }
+        if (!from.renameTo(to)) {
             throw new IOException();
         }
     }
@@ -380,10 +427,17 @@ public final class DiskLruCache implements Closeable {
         InputStream[] ins = new InputStream[valueCount];
         try {
             for (int i = 0; i < valueCount; i++) {
-                ins[i] = new FileInputStream(entry.getCleanFile());
+                ins[i] = new FileInputStream(entry.getCleanFile(i));
             }
         } catch (FileNotFoundException e) {
             // a file must have been deleted manually!
+            for (int i = 0; i < valueCount; i++) {
+                if (ins[i] != null) {
+                    IoUtils.closeQuietly(ins[i]);
+                } else {
+                    break;
+                }
+            }
             return null;
         }
 
@@ -474,7 +528,7 @@ public final class DiskLruCache implements Closeable {
                     editor.abort();
                     throw new IllegalStateException("Newly created entry didn't create value for index " + i);
                 }
-                if (!entry.getDirtyFile().exists()) {
+                if (!entry.getDirtyFile(i).exists()) {
                     editor.abort();
                     return;
                 }
@@ -482,10 +536,10 @@ public final class DiskLruCache implements Closeable {
         }
 
         for (int i = 0; i < valueCount; i++) {
-            File dirty = entry.getDirtyFile();
+            File dirty = entry.getDirtyFile(i);
             if (success) {
                 if (dirty.exists()) {
-                    File clean = entry.getCleanFile();
+                    File clean = entry.getCleanFile(i);
                     dirty.renameTo(clean);
                     long oldLength = entry.lengths[i];
                     long newLength = clean.length();
@@ -540,8 +594,8 @@ public final class DiskLruCache implements Closeable {
         }
 
         for (int i = 0; i < valueCount; i++) {
-            File file = entry.getCleanFile();
-            if (file.exists() && !file.delete()) {
+            File file = entry.getCleanFile(i);
+            if (!file.delete()) {
                 throw new IOException("failed to delete " + file);
             }
             size -= entry.lengths[i];
@@ -714,7 +768,7 @@ public final class DiskLruCache implements Closeable {
                     return null;
                 }
                 try {
-                    return new FileInputStream(entry.getCleanFile());
+                    return new FileInputStream(entry.getCleanFile(index));
                 } catch (FileNotFoundException e) {
                     return null;
                 }
@@ -745,7 +799,7 @@ public final class DiskLruCache implements Closeable {
                 if (!entry.readable) {
                   written[index] = true;
                 }
-                File dirtyFile = entry.getDirtyFile();
+                File dirtyFile = entry.getDirtyFile(index);
                 FileOutputStream outputStream;
                 try {
                     outputStream = new FileOutputStream(dirtyFile);
@@ -847,7 +901,7 @@ public final class DiskLruCache implements Closeable {
     }
 
     public File getFile(String key) {
-        return new Entry(key).getCleanFile();
+            return new Entry(key).getCleanFile(0);
     }
 
     private final class Entry {
@@ -899,12 +953,12 @@ public final class DiskLruCache implements Closeable {
             throw new IOException("unexpected journal line: " + java.util.Arrays.toString(strings));
         }
 
-        public File getCleanFile() {
-            return new File(directory, key + ".jpg");
+        public File getCleanFile(int i) {
+            return new File(directory, key + "." + i + ".jpg");
         }
 
-        public File getDirtyFile() {
-            return new File(directory, key + ".jpg.tmp");
+        public File getDirtyFile(int i) {
+            return new File(directory, key + "." + i + ".jpg.tmp");
         }
     }
 }
