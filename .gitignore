@@ -22,3 +22,7 @@ release.properties
 *.iws
 .idea/
 out/
+
+# Others
+.DS_STORE
+deploy.sh

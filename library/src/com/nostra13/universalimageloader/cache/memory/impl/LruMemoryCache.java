@@ -7,6 +7,7 @@ import java.util.Map;
 
 import android.graphics.Bitmap;
 
+import android.util.LruCache;
 import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
 
 /**
@@ -21,7 +22,7 @@ import com.nostra13.universalimageloader.cache.memory.MemoryCacheAware;
  */
 public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 
-	private final LinkedHashMap<String, Bitmap> map;
+	private LruCache<String, Bitmap> map;
 
 	private final int maxSize;
 	/** Size of this cache in bytes */
@@ -35,7 +36,7 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 			throw new IllegalArgumentException("maxSize <= 0");
 		}
 		this.maxSize = maxSize;
-		this.map = new LinkedHashMap<String, Bitmap>(0, 0.75f, true);
+		reset();
 	}
 
 	/**
@@ -49,7 +50,12 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 		}
 
 		synchronized (this) {
-			return map.get(key);
+			Bitmap bitmap = map.get(key);
+            if (bitmap != null && bitmap.isRecycled()) {
+                map.remove(key);
+                bitmap = null;
+            }
+            return bitmap;
 		}
 	}
 
@@ -63,46 +69,28 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 		}
 
 		synchronized (this) {
-			size += sizeOf(key, value);
+//			size += sizeOf(key, value);
 			Bitmap previous = map.put(key, value);
 			if (previous != null) {
-				size -= sizeOf(key, previous);
+				return true;
 			}
 		}
 
-		trimToSize(maxSize);
-		return true;
+		return false;
 	}
 
-	/**
-	 * Remove the eldest entries until the total of remaining entries is at or below the requested size.
-	 * 
-	 * @param maxSize the maximum size of the cache before returning. May be -1 to evict even 0-sized elements.
-	 */
-	private void trimToSize(int maxSize) {
-		while (true) {
-			String key;
-			Bitmap value;
-			synchronized (this) {
-				if (size < 0 || (map.isEmpty() && size != 0)) {
-					throw new IllegalStateException(getClass().getName() + ".sizeOf() is reporting inconsistent results!");
-				}
-
-				if (size <= maxSize || map.isEmpty()) {
-					break;
-				}
-
-				Map.Entry<String, Bitmap> toEvict = map.entrySet().iterator().next();
-				if (toEvict == null) {
-					break;
-				}
-				key = toEvict.getKey();
-				value = toEvict.getValue();
-				map.remove(key);
-				size -= sizeOf(key, value);
-			}
-		}
-	}
+    private void reset() {
+        if (this.map != null) {
+            this.map.evictAll();
+        }
+        this.map = new LruCache<String, Bitmap>(this.maxSize) {
+            @Override
+            protected int sizeOf(String key, Bitmap value) {
+                return value.getRowBytes()*value.getHeight();
+//                return value.getByteCount();
+            }
+        };
+    }
 
 	/** Removes the entry for {@code key} if it exists. */
 	@Override
@@ -113,20 +101,20 @@ public class LruMemoryCache implements MemoryCacheAware<String, Bitmap> {
 
 		synchronized (this) {
 			Bitmap previous = map.remove(key);
-			if (previous != null) {
-				size -= sizeOf(key, previous);
+			if (previous != null && !previous.isRecycled()) {
+                previous.recycle();
 			}
 		}
 	}
 
 	@Override
 	public Collection<String> keys() {
-		return new HashSet<String>(map.keySet());
+		return map.snapshot().keySet();
 	}
 
 	@Override
 	public void clear() {
-		trimToSize(-1); // -1 will evict 0-sized elements
+		reset();
 	}
 
 	/**
