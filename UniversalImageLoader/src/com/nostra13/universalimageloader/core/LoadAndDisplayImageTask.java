@@ -209,12 +209,13 @@ final class LoadAndDisplayImageTask implements Runnable {
 //				saveImageOnDisc(imageFile);
 				if (b != null) {
 					discCache.put(uri, b, configuration);
+                    if (snapshot != null) {
+                        snapshot.close();
+                    }
+                    snapshot = discCache.get(uri);
+                    bitmap = decodeImage(snapshot.getInputStream(0));
 				}
-				if (snapshot != null) {
-					snapshot.close();
-				}
-				snapshot = discCache.get(uri);
-				bitmap = decodeImage(snapshot.getInputStream(0));
+
 //				imageUriForDecoding = imageFile.toURI();
 			} else {
 				imageUriForDecoding = new URI(uri);

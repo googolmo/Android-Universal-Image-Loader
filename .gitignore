@@ -5,6 +5,7 @@
 */.externalToolBuilders
 build.xml
 local.properties
+project.properties
 .idea
 gen-external-apklibs
 *.iml
