@@ -9,8 +9,8 @@
     <packaging>pom</packaging>
     <version>1.7.0.1-SNAPSHOT</version>
     <modules>
-        <module>UniversalImageLoaderExample</module>
-        <module>UniversalImageLoader</module>
+        <module>library</module>
+        <module>sample</module>
     </modules>
 
     <distributionManagement>
