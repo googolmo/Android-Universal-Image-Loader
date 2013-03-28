@@ -13,6 +13,7 @@ import android.widget.ImageView;
 
 import com.nostra13.example.universalimageloader.Constants.Extra;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.PauseOnScrollListener;
 
 /**
@@ -48,7 +49,7 @@ public class ImageGridActivity extends BaseActivity {
 				startImageGalleryActivity(position);
 			}
 		});
-		gridView.setOnScrollListener(new PauseOnScrollListener(true, true));
+		gridView.setOnScrollListener(new PauseOnScrollListener(ImageLoader.getInstance(), true, true));
 	}
 
 	private void startImageGalleryActivity(int position) {

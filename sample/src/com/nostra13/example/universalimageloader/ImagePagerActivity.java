@@ -19,6 +19,7 @@ import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
+import com.nostra13.universalimageloader.core.process.BitmapProcessor;
 
 import java.io.File;
 
@@ -41,13 +42,14 @@ public class ImagePagerActivity extends BaseActivity {
 		int pagerPosition = bundle.getInt(Extra.IMAGE_POSITION, 0);
 
 		options = new DisplayImageOptions.Builder()
-			.showImageForEmptyUri(R.drawable.image_for_empty_url)
-			.resetViewBeforeLoading(true)
-			.cacheOnDisc(true)
-			.imageScaleType(ImageScaleType.IN_SAMPLE_INT)
-			.bitmapConfig(Bitmap.Config.RGB_565)
-			.displayer(new FadeInBitmapDisplayer(300))
-			.build();
+			.showImageForEmptyUri(R.drawable.ic_empty)
+                .showImageOnFail(R.drawable.ic_error)
+                .resetViewBeforeLoading(true)
+                .cacheOnDisc(true)
+                .imageScaleType(ImageScaleType.IN_SAMPLE_INT)
+                .bitmapConfig(Bitmap.Config.RGB_565)
+                .displayer(new FadeInBitmapDisplayer(300))
+                .build();
 
 		pager = (ViewPager) findViewById(R.id.pager);
 		adapter = new ImagePagerAdapter(imageUrls);
@@ -113,35 +115,40 @@ public class ImagePagerActivity extends BaseActivity {
 			final ProgressBar spinner = (ProgressBar) imageLayout.findViewById(R.id.loading);
 
 			imageLoader.displayImage(images[position], imageView, options, new SimpleImageLoadingListener() {
-				@Override
-				public void onLoadingStarted() {
-					spinner.setVisibility(View.VISIBLE);
-				}
+                @Override
+                public void onLoadingStarted(String imageUri, View view) {
+                    spinner.setVisibility(View.VISIBLE);
+                }
 
-				@Override
-				public void onLoadingFailed(FailReason failReason) {
-					String message = null;
-					switch (failReason) {
-						case IO_ERROR:
-							message = "Input/Output error";
-							break;
-						case OUT_OF_MEMORY:
-							message = "Out Of Memory error";
-							break;
-						case UNKNOWN:
-							message = "Unknown error";
-							break;
-					}
-					Toast.makeText(ImagePagerActivity.this, message, Toast.LENGTH_SHORT).show();
+                @Override
+                public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
+                    String message = null;
+                    switch (failReason.getType()) {
+                        case IO_ERROR:
+                            message = "Input/Output error";
+                            break;
+                        case DECODING_ERROR:
+                            message = "Image can't be decoded";
+                            break;
+                        case NETWORK_DENIED:
+                            message = "Downloads are denied";
+                            break;
+                        case OUT_OF_MEMORY:
+                            message = "Out Of Memory error";
+                            break;
+                        case UNKNOWN:
+                            message = "Unknown error";
+                            break;
+                    }
+                    Toast.makeText(ImagePagerActivity.this, message, Toast.LENGTH_SHORT).show();
 
-					spinner.setVisibility(View.GONE);
-					imageView.setImageResource(android.R.drawable.ic_delete);
-				}
+                    spinner.setVisibility(View.GONE);
+                }
 
-				@Override
-				public void onLoadingComplete(Bitmap loadedImage) {
-					spinner.setVisibility(View.GONE);
-				}
+                @Override
+                public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                    spinner.setVisibility(View.GONE);
+                }
 			});
 
 			((ViewPager) view).addView(imageLayout, 0);

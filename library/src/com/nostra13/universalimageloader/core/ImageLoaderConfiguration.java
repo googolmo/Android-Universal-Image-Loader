@@ -1,5 +1,6 @@
 package com.nostra13.universalimageloader.core;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 import android.content.Context;
@@ -15,6 +16,8 @@ import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageLoadingListener;
 import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
+import com.nostra13.universalimageloader.core.download.NetworkDeniedImageDownloader;
+import com.nostra13.universalimageloader.core.download.SlowNetworkImageDownloader;
 import com.nostra13.universalimageloader.utils.L;
 
 /**
@@ -30,6 +33,8 @@ import com.nostra13.universalimageloader.utils.L;
  */
 public final class ImageLoaderConfiguration {
 
+    final Context context;
+
 	final int maxImageWidthForMemoryCache;
 	final int maxImageHeightForMemoryCache;
 	final int maxImageWidthForDiscCache;
@@ -37,7 +42,13 @@ public final class ImageLoaderConfiguration {
 	final CompressFormat imageCompressFormatForDiscCache;
 	final int imageQualityForDiscCache;
 
+    final Executor taskExecutor;
+    final Executor taskExecutorForCachedImages;
+    final boolean customExecutor;
+    final boolean customExecutorForCachedImages;
+
 	final int threadPoolSize;
+    final int threadPriority;
 	final boolean handleOutOfMemory;
 	final QueueProcessingType tasksProcessingType;
 
@@ -45,17 +56,24 @@ public final class ImageLoaderConfiguration {
 	final LruDiskCache discCache;
 	final ImageDownloader downloader;
 	final DisplayImageOptions defaultDisplayImageOptions;
-	final ThreadFactory displayImageThreadFactory;
 	final boolean loggingEnabled;
 
+    final DiscCacheAware reserveDiscCache;
+    final ImageDownloader networkDeniedDownloader;
+    final ImageDownloader slowNetworkDownloader;
+
 	private ImageLoaderConfiguration(final Builder builder) {
+        context = builder.context;
 		maxImageWidthForMemoryCache = builder.maxImageWidthForMemoryCache;
 		maxImageHeightForMemoryCache = builder.maxImageHeightForMemoryCache;
 		maxImageWidthForDiscCache = builder.maxImageWidthForDiscCache;
 		maxImageHeightForDiscCache = builder.maxImageHeightForDiscCache;
 		imageCompressFormatForDiscCache = builder.imageCompressFormatForDiscCache;
 		imageQualityForDiscCache = builder.imageQualityForDiscCache;
+        taskExecutor = builder.taskExecutor;
+        taskExecutorForCachedImages = builder.taskExecutorForCachedImages;
 		threadPoolSize = builder.threadPoolSize;
+        threadPriority = builder.threadPriority;
 		handleOutOfMemory = builder.handleOutOfMemory;
 		discCache = builder.discCache;
 		memoryCache = builder.memoryCache;
@@ -63,14 +81,22 @@ public final class ImageLoaderConfiguration {
 		loggingEnabled = builder.loggingEnabled;
 		downloader = builder.downloader;
 		tasksProcessingType = builder.tasksProcessingType;
-		displayImageThreadFactory = new ThreadFactory() {
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = new Thread(r);
-				t.setPriority(builder.threadPriority);
-				return t;
-			}
-		};
+//		displayImageThreadFactory = new ThreadFactory() {
+//			@Override
+//			public Thread newThread(Runnable r) {
+//				Thread t = new Thread(r);
+//				t.setPriority(builder.threadPriority);
+//				return t;
+//			}
+//		};
+
+        customExecutor = builder.customExecutor;
+        customExecutorForCachedImages = builder.customExecutorForCachedImages;
+
+        networkDeniedDownloader = new NetworkDeniedImageDownloader(downloader);
+        slowNetworkDownloader = new SlowNetworkImageDownloader(downloader);
+
+        reserveDiscCache = DefaultConfigurationFactory.createReserveDiscCache(context);
 	}
 
 	/**
@@ -113,12 +139,11 @@ public final class ImageLoaderConfiguration {
 	 */
 	public static class Builder {
 
-		private static final String WARNING_OVERLAP_MEMORY_CACHE_SIZE = "This method's call overlaps memoryCacheSize() method call";
-		private static final String WARNING_MEMORY_CACHE_ALREADY_SET = "You already have set memory cache. This method call will make no effect.";
-		private static final String WARNING_OVERLAP_DISC_CACHE_SIZE = "This method's call overlaps discCacheSize() method call";
-		private static final String WARNING_OVERLAP_DISC_CACHE_FILE_COUNT = "This method's call overlaps discCacheFileCount() method call";
-		private static final String WARNING_OVERLAP_DISC_CACHE_FILE_NAME_GENERATOR = "This method's call overlaps discCacheFileNameGenerator() method call";
-		private static final String WARNING_DISC_CACHE_ALREADY_SET = "You already have set disc cache. This method call will make no effect.";
+        private static final String WARNING_OVERLAP_DISC_CACHE_PARAMS = "discCache(), discCacheSize() and discCacheFileCount calls overlap each other";
+        private static final String WARNING_OVERLAP_DISC_CACHE_NAME_GENERATOR = "discCache() and discCacheFileNameGenerator() calls overlap each other";
+        private static final String WARNING_OVERLAP_MEMORY_CACHE = "memoryCache() and memoryCacheSize() calls overlap each other";
+        private static final String WARNING_OVERLAP_EXECUTOR = "threadPoolSize(), threadPriority() and tasksProcessingOrder() calls "
+                + "can overlap taskExecutor() and taskExecutorForCachedImages() calls.";
 
 		/** {@value} */
 		public static final int DEFAULT_THREAD_POOL_SIZE = 3;
@@ -126,8 +151,10 @@ public final class ImageLoaderConfiguration {
 		public static final int DEFAULT_THREAD_PRIORITY = Thread.NORM_PRIORITY - 1;
 		/** {@value} */
 		public static final int DEFAULT_MEMORY_CACHE_PERCENT = 50; // percent
+        public static final QueueProcessingType DEFAULT_TASK_PROCESSING_TYPE = QueueProcessingType.FIFO;
 
-		private Context context;
+
+        private Context context;
 
 		private int maxImageWidthForMemoryCache = 0;
 		private int maxImageHeightForMemoryCache = 0;
@@ -136,11 +163,16 @@ public final class ImageLoaderConfiguration {
 		private CompressFormat imageCompressFormatForDiscCache = CompressFormat.JPEG;
 		private int imageQualityForDiscCache = 90;
 
-		private int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
+        private Executor taskExecutor = null;
+        private Executor taskExecutorForCachedImages = null;
+        private boolean customExecutor = false;
+        private boolean customExecutorForCachedImages = false;
+
+        private int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
 		private int threadPriority = DEFAULT_THREAD_PRIORITY;
 		private boolean denyCacheImageMultipleSizesInMemory = false;
 		private boolean handleOutOfMemory = true;
-		private QueueProcessingType tasksProcessingType = QueueProcessingType.FIFO;
+		private QueueProcessingType tasksProcessingType = DEFAULT_TASK_PROCESSING_TYPE;
 
 		private int memoryCachePercent = DEFAULT_MEMORY_CACHE_PERCENT;
 		private int discCacheSize = 100 * 1024 * 1024;
@@ -197,11 +229,63 @@ public final class ImageLoaderConfiguration {
 			return this;
 		}
 
+        /**
+         * Sets custom {@linkplain Executor executor} for tasks of loading and displaying images.<br />
+         * <br />
+         * <b>NOTE:</b> If you set custom executor then following configuration options will not be considered for this
+         * executor:
+         * <ul>
+         * <li>{@link #threadPoolSize(int)}</li>
+         * <li>{@link #threadPriority(int)}</li>
+         * <li>{@link #tasksProcessingOrder(QueueProcessingType)}</li>
+         * </ul>
+         *
+         * @see #taskExecutorForCachedImages(Executor)
+         */
+        public Builder taskExecutor(Executor executor) {
+            if (threadPoolSize != DEFAULT_THREAD_POOL_SIZE || threadPriority != DEFAULT_THREAD_PRIORITY || tasksProcessingType != DEFAULT_TASK_PROCESSING_TYPE) {
+                L.w(WARNING_OVERLAP_EXECUTOR);
+            }
+
+            this.taskExecutor = executor;
+            return this;
+        }
+
+        /**
+         * Sets custom {@linkplain Executor executor} for tasks of displaying <b>cached on disc</b> images (these tasks
+         * are executed quickly so UIL prefer to use separate executor for them).<br />
+         * <br />
+         * If you set the same executor for {@linkplain #taskExecutor(Executor) general tasks} and
+         * {@linkplain #taskExecutorForCachedImages(Executor) tasks about cached images} then these tasks will be in the
+         * same thread pool. So short-lived tasks can wait a long time for their turn.<br />
+         * <br />
+         * <b>NOTE:</b> If you set custom executor then following configuration options will not be considered for this
+         * executor:
+         * <ul>
+         * <li>{@link #threadPoolSize(int)}</li>
+         * <li>{@link #threadPriority(int)}</li>
+         * <li>{@link #tasksProcessingOrder(QueueProcessingType)}</li>
+         * </ul>
+         *
+         * @see #taskExecutor(Executor)
+         */
+        public Builder taskExecutorForCachedImages(Executor executorForCachedImages) {
+            if (threadPoolSize != DEFAULT_THREAD_POOL_SIZE || threadPriority != DEFAULT_THREAD_PRIORITY || tasksProcessingType != DEFAULT_TASK_PROCESSING_TYPE) {
+                L.w(WARNING_OVERLAP_EXECUTOR);
+            }
+
+            this.taskExecutorForCachedImages = executorForCachedImages;
+            return this;
+        }
+
 		/**
 		 * Sets thread pool size for image display tasks.<br />
 		 * Default value - {@link #DEFAULT_THREAD_POOL_SIZE this}
 		 * */
 		public Builder threadPoolSize(int threadPoolSize) {
+            if (taskExecutor != null || taskExecutorForCachedImages != null) {
+                L.w(WARNING_OVERLAP_EXECUTOR);
+            }
 			this.threadPoolSize = threadPoolSize;
 			return this;
 		}
@@ -212,11 +296,14 @@ public final class ImageLoaderConfiguration {
 		 * Default value - {@link #DEFAULT_THREAD_PRIORITY this}
 		 * */
 		public Builder threadPriority(int threadPriority) {
+            if (taskExecutor != null || taskExecutorForCachedImages != null) {
+                L.w(WARNING_OVERLAP_EXECUTOR);
+            }
 			if (threadPriority < Thread.MIN_PRIORITY) {
 				this.threadPriority = Thread.MIN_PRIORITY;
 			} else {
 				if (threadPriority > Thread.MAX_PRIORITY) {
-					threadPriority = Thread.MAX_PRIORITY;
+					this.threadPriority = Thread.MAX_PRIORITY;
 				} else {
 					this.threadPriority = threadPriority;
 				}
@@ -276,8 +363,11 @@ public final class ImageLoaderConfiguration {
 		 * own implementation of {@link MemoryCacheAware}.
 		 */
 		public Builder memoryCachePercent(int memoryCachePercent) {
-			if (memoryCachePercent <= 0) throw new IllegalArgumentException("memoryCacheSize must be a positive number");
-			if (memoryCache != null) L.w(WARNING_MEMORY_CACHE_ALREADY_SET);
+            if (memoryCachePercent <= 0) throw new IllegalArgumentException("memoryCacheSize must be a positive number");
+
+            if (memoryCache != null) {
+                L.w(WARNING_OVERLAP_MEMORY_CACHE);
+            }
 
 			this.memoryCachePercent = memoryCachePercent;
 			return this;
@@ -291,7 +381,9 @@ public final class ImageLoaderConfiguration {
 		 * tuning.
 		 */
 		public Builder memoryCache(MemoryCacheAware<String, Bitmap> memoryCache) {
-			if (memoryCachePercent != DEFAULT_MEMORY_CACHE_PERCENT) L.w(WARNING_OVERLAP_MEMORY_CACHE_SIZE);
+            if (memoryCachePercent != DEFAULT_MEMORY_CACHE_PERCENT) {
+                L.w(WARNING_OVERLAP_MEMORY_CACHE);
+            }
 
 			this.memoryCache = memoryCache;
 			return this;
@@ -306,9 +398,11 @@ public final class ImageLoaderConfiguration {
 		 * implementation of {@link DiscCacheAware}
 		 */
 		public Builder discCacheSize(int maxCacheSize) {
-			if (maxCacheSize <= 0) throw new IllegalArgumentException("maxCacheSize must be a positive number");
-			if (discCache != null) L.w(WARNING_DISC_CACHE_ALREADY_SET);
-			if (discCacheFileCount > 0) L.w(WARNING_OVERLAP_DISC_CACHE_FILE_COUNT);
+            if (maxCacheSize <= 0) throw new IllegalArgumentException("maxCacheSize must be a positive number");
+
+            if (discCache != null || discCacheFileCount > 0) {
+                L.w(WARNING_OVERLAP_DISC_CACHE_PARAMS);
+            }
 
 			this.discCacheSize = maxCacheSize;
 			return this;
@@ -323,9 +417,11 @@ public final class ImageLoaderConfiguration {
 		 * implementation of {@link DiscCacheAware}
 		 */
 		public Builder discCacheFileCount(int maxFileCount) {
-			if (maxFileCount <= 0) throw new IllegalArgumentException("maxFileCount must be a positive number");
-			if (discCache != null) L.w(WARNING_DISC_CACHE_ALREADY_SET);
-			if (discCacheSize > 0) L.w(WARNING_OVERLAP_DISC_CACHE_SIZE);
+            if (maxFileCount <= 0) throw new IllegalArgumentException("maxFileCount must be a positive number");
+
+            if (discCache != null || discCacheSize > 0) {
+                L.w(WARNING_OVERLAP_DISC_CACHE_PARAMS);
+            }
 
 			this.discCacheSize = 0;
 			this.discCacheFileCount = maxFileCount;
@@ -339,22 +435,24 @@ public final class ImageLoaderConfiguration {
 		 * DefaultConfigurationFactory.createFileNameGenerator()}
 		 */
 		public Builder discCacheFileNameGenerator(FileNameGenerator fileNameGenerator) {
-			if (discCache != null) L.w(WARNING_DISC_CACHE_ALREADY_SET);
+            if (discCache != null) {
+                L.w(WARNING_OVERLAP_DISC_CACHE_NAME_GENERATOR);
+            }
 
-			this.discCacheFileNameGenerator = fileNameGenerator;
-			return this;
+            this.discCacheFileNameGenerator = fileNameGenerator;
+            return this;
 		}
 
-		/**
-		 * Sets utility which will be responsible for downloading of image.<br />
-		 * Default value -
-		 * {@link com.nostra13.universalimageloader.core.DefaultConfigurationFactory#createImageDownloader()
-		 * DefaultConfigurationFactory.createImageDownloader()}
-		 * */
-		public Builder imageDownloader(ImageDownloader imageDownloader) {
-			this.downloader = imageDownloader;
-			return this;
-		}
+        /**
+         * Sets utility which will be responsible for downloading of image.<br />
+         * Default value -
+         * {@link com.nostra13.universalimageloader.core.DefaultConfigurationFactory#createImageDownloader(Context)
+         * DefaultConfigurationFactory.createImageDownloader()}
+         * */
+        public Builder imageDownloader(ImageDownloader imageDownloader) {
+            this.downloader = imageDownloader;
+            return this;
+        }
 
 		/**
 		 * Sets disc cache for images.<br />
@@ -364,9 +462,12 @@ public final class ImageLoaderConfiguration {
 		 * StorageUtils.getCacheDirectory(Context)}.<br />
 		 */
 		public Builder discCache(LruDiskCache discCache) {
-			if (discCacheSize > 0) L.w(WARNING_OVERLAP_DISC_CACHE_SIZE);
-			if (discCacheFileCount > 0) L.w(WARNING_OVERLAP_DISC_CACHE_FILE_COUNT);
-			if (discCacheFileNameGenerator != null) L.w(WARNING_OVERLAP_DISC_CACHE_FILE_NAME_GENERATOR);
+            if (discCacheSize > 0 || discCacheFileCount > 0) {
+                L.w(WARNING_OVERLAP_DISC_CACHE_PARAMS);
+            }
+            if (discCacheFileNameGenerator != null) {
+                L.w(WARNING_OVERLAP_DISC_CACHE_NAME_GENERATOR);
+            }
 
 			this.discCache = discCache;
 			return this;
@@ -411,7 +512,7 @@ public final class ImageLoaderConfiguration {
 				memoryCache = DefaultConfigurationFactory.createMemoryCache(context, memoryCachePercent, denyCacheImageMultipleSizesInMemory);
 			}
 			if (downloader == null) {
-				downloader = DefaultConfigurationFactory.createImageDownloader();
+				downloader = DefaultConfigurationFactory.createImageDownloader(context);
 			}
 			if (defaultDisplayImageOptions == null) {
 				defaultDisplayImageOptions = DisplayImageOptions.createSimple();

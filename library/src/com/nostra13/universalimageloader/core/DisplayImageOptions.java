@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.display.BitmapDisplayer;
 import com.nostra13.universalimageloader.core.display.SimpleBitmapDisplayer;
+import com.nostra13.universalimageloader.core.process.BitmapProcessor;
 
 /**
  * Contains options for image display. Defines:
@@ -35,73 +36,109 @@ public final class DisplayImageOptions {
 
 	private final int stubImage;
 	private final int imageForEmptyUri;
+    private final int imageOnFail;
 	private final boolean resetViewBeforeLoading;
 	private final boolean cacheInMemory;
 	private final boolean cacheOnDisc;
 	private final ImageScaleType imageScaleType;
 	private final Bitmap.Config bitmapConfig;
 	private final int delayBeforeLoading;
+    private final Object extraForDownloader;
+    private final BitmapProcessor preProcessor;
+    private final BitmapProcessor postProcessor;
 	private final BitmapDisplayer displayer;
 
 	private DisplayImageOptions(Builder builder) {
 		stubImage = builder.stubImage;
 		imageForEmptyUri = builder.imageForEmptyUri;
+        imageOnFail = builder.imageOnFail;
 		resetViewBeforeLoading = builder.resetViewBeforeLoading;
 		cacheInMemory = builder.cacheInMemory;
 		cacheOnDisc = builder.cacheOnDisc;
 		imageScaleType = builder.imageScaleType;
 		bitmapConfig = builder.bitmapConfig;
 		delayBeforeLoading = builder.delayBeforeLoading;
+        extraForDownloader = builder.extraForDownloader;
+        preProcessor = builder.preProcessor;
+        postProcessor = builder.postProcessor;
 		displayer = builder.displayer;
 	}
 
-	boolean isShowStubImage() {
-		return stubImage != 0;
-	}
+    boolean shouldShowStubImage() {
+        return stubImage != 0;
+    }
 
-	boolean isShowImageForEmptyUri() {
-		return imageForEmptyUri != 0;
-	}
+    boolean shouldShowImageForEmptyUri() {
+        return imageForEmptyUri != 0;
+    }
 
-	Integer getStubImage() {
-		return stubImage;
-	}
+    boolean shouldShowImageOnFail() {
+        return imageOnFail != 0;
+    }
 
-	Integer getImageForEmptyUri() {
-		return imageForEmptyUri;
-	}
+    boolean shouldPreProcess() {
+        return preProcessor != null;
+    }
 
-	boolean isResetViewBeforeLoading() {
-		return resetViewBeforeLoading;
-	}
+    boolean shouldPostProcess() {
+        return postProcessor != null;
+    }
 
-	boolean isCacheInMemory() {
-		return cacheInMemory;
-	}
+    boolean shouldDelayBeforeLoading() {
+        return delayBeforeLoading > 0;
+    }
 
-	boolean isCacheOnDisc() {
-		return cacheOnDisc;
-	}
+    int getStubImage() {
+        return stubImage;
+    }
 
-	ImageScaleType getImageScaleType() {
-		return imageScaleType;
-	}
+    int getImageForEmptyUri() {
+        return imageForEmptyUri;
+    }
 
-	Bitmap.Config getBitmapConfig() {
-		return bitmapConfig;
-	}
+    int getImageOnFail() {
+        return imageOnFail;
+    }
 
-	boolean isDelayBeforeLoading() {
-		return delayBeforeLoading > 0;
-	}
+    boolean isResetViewBeforeLoading() {
+        return resetViewBeforeLoading;
+    }
 
-	int getDelayBeforeLoading() {
-		return delayBeforeLoading;
-	}
+    boolean isCacheInMemory() {
+        return cacheInMemory;
+    }
 
-	BitmapDisplayer getDisplayer() {
-		return displayer;
-	}
+    boolean isCacheOnDisc() {
+        return cacheOnDisc;
+    }
+
+    ImageScaleType getImageScaleType() {
+        return imageScaleType;
+    }
+
+    Bitmap.Config getBitmapConfig() {
+        return bitmapConfig;
+    }
+
+    int getDelayBeforeLoading() {
+        return delayBeforeLoading;
+    }
+
+    Object getExtraForDownloader() {
+        return extraForDownloader;
+    }
+
+    BitmapProcessor getPreProcessor() {
+        return preProcessor;
+    }
+
+    BitmapProcessor getPostProcessor() {
+        return postProcessor;
+    }
+
+    BitmapDisplayer getDisplayer() {
+        return displayer;
+    }
 
 	/**
 	 * Builder for {@link DisplayImageOptions}
@@ -111,12 +148,16 @@ public final class DisplayImageOptions {
 	public static class Builder {
 		private int stubImage = 0;
 		private int imageForEmptyUri = 0;
+        private int imageOnFail = 0;
 		private boolean resetViewBeforeLoading = false;
 		private boolean cacheInMemory = false;
 		private boolean cacheOnDisc = false;
 		private ImageScaleType imageScaleType = ImageScaleType.IN_SAMPLE_POWER_OF_2;
 		private Bitmap.Config bitmapConfig = Bitmap.Config.ARGB_8888;
 		private int delayBeforeLoading = 0;
+        private Object extraForDownloader = null;
+        private BitmapProcessor preProcessor = null;
+        private BitmapProcessor postProcessor = null;
 		private BitmapDisplayer displayer = DefaultConfigurationFactory.createBitmapDisplayer();
 
 		/**
@@ -142,11 +183,16 @@ public final class DisplayImageOptions {
 			return this;
 		}
 
-//		/** {@link android.widget.ImageView ImageView} will be reset (set <b>null</b>) before image loading start */
-//		public Builder resetViewBeforeLoading() {
-//			resetViewBeforeLoading = true;
-//			return this;
-//		}
+        /**
+         * Incoming image will be displayed in {@link android.widget.ImageView ImageView} if some error occurs during
+         * requested image loading/decoding.
+         *
+         * @param imageRes Image resource
+         */
+        public Builder showImageOnFail(int imageRes) {
+            imageOnFail = imageRes;
+            return this;
+        }
 
 		public Builder resetViewBeforeLoading(boolean value) {
 			resetViewBeforeLoading = value;
@@ -154,22 +200,12 @@ public final class DisplayImageOptions {
 		}
 
 		/** Loaded image will be cached in memory */
-//		public Builder cacheInMemory() {
-//			cacheInMemory = true;
-//			return this;
-//		}
-
 		public Builder cacheInMemory(boolean value) {
 			cacheInMemory = true;
 			return this;
 		}
 
 		/** Loaded image will be cached on disc */
-//		public Builder cacheOnDisc() {
-//			cacheOnDisc = true;
-//			return this;
-//		}
-
 		public Builder cacheOnDisc(boolean value) {
 			cacheOnDisc = value;
 			return this;
@@ -177,7 +213,7 @@ public final class DisplayImageOptions {
 
 		/**
 		 * Sets {@link ImageScaleType decoding type} for image loading task. Default value -
-		 * {@link ImageScaleType#POWER_OF_2}
+		 * {@link ImageScaleType#IN_SAMPLE_POWER_OF_2}
 		 */
 		public Builder imageScaleType(ImageScaleType imageScaleType) {
 			this.imageScaleType = imageScaleType;
@@ -196,6 +232,31 @@ public final class DisplayImageOptions {
 			return this;
 		}
 
+        /** Sets auxiliary object which will be passed to {@link ImageDownloader#getStream(java.net.URI, Object)} */
+        public Builder extraForDownloader(Object extra) {
+            this.extraForDownloader = extra;
+            return this;
+        }
+
+        /**
+         * Sets bitmap processor which will be process bitmaps before they will be cached in memory. So memory cache
+         * will contain bitmap processed by incoming preProcessor.<br />
+         * Image will be pre-processed even if caching in memory is disabled.
+         */
+        public Builder preProcessor(BitmapProcessor preProcessor) {
+            this.preProcessor = preProcessor;
+            return this;
+        }
+
+        /**
+         * Sets bitmap processor which will be process bitmaps before they will be displayed in {@link ImageView} but
+         * after they'll have been saved in memory cache.
+         */
+        public Builder postProcessor(BitmapProcessor postProcessor) {
+            this.postProcessor = postProcessor;
+            return this;
+        }
+
 		/**
 		 * Sets custom {@link BitmapDisplayer displayer} for image loading task. Default value -
 		 * {@link DefaultConfigurationFactory#createBitmapDisplayer()}
@@ -209,12 +270,16 @@ public final class DisplayImageOptions {
 		public Builder cloneFrom(DisplayImageOptions options) {
 			stubImage = options.stubImage;
 			imageForEmptyUri = options.imageForEmptyUri;
+            imageOnFail = options.imageOnFail;
 			resetViewBeforeLoading = options.resetViewBeforeLoading;
 			cacheInMemory = options.cacheInMemory;
 			cacheOnDisc = options.cacheOnDisc;
 			imageScaleType = options.imageScaleType;
 			bitmapConfig = options.bitmapConfig;
 			delayBeforeLoading = options.delayBeforeLoading;
+            extraForDownloader = options.extraForDownloader;
+            preProcessor = options.preProcessor;
+            postProcessor = options.postProcessor;
 			displayer = options.displayer;
 			return this;
 		}

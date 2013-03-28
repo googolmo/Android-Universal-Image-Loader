@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.nostra13.example.universalimageloader.Constants.Extra;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.PauseOnScrollListener;
 import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
 
@@ -49,7 +50,7 @@ public class ImageListActivity extends BaseActivity {
 			}
 		});
 
-		listView.setOnScrollListener(new PauseOnScrollListener(false, true));
+		listView.setOnScrollListener(new PauseOnScrollListener(ImageLoader.getInstance(), false, true));
 	}
 
 	private void startImageGalleryActivity(int position) {

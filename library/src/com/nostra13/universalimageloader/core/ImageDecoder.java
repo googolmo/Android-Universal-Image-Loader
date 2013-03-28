@@ -120,8 +120,8 @@ class ImageDecoder {
 
 	private Options getBitmapOptionsForImageDecoding(ImageSize targetSize, ImageScaleType scaleType, ViewScaleType viewScaleType) throws IOException {
 		Options decodeOptions = new Options();
-		decodeOptions.inSampleSize = computeImageScale(targetSize, scaleType, viewScaleType);
-		decodeOptions.inPreferredConfig = displayOptions.getBitmapConfig();
+        decodeOptions.inSampleSize = scaleType == ImageScaleType.NONE ? 1 : computeImageScale(targetSize, scaleType, viewScaleType);
+        decodeOptions.inPreferredConfig = displayOptions.getBitmapConfig();
 		return decodeOptions;
 	}
 
@@ -153,7 +153,7 @@ class ImageDecoder {
 		int heightScale = imageHeight / targetHeight;
 
 		if (viewScaleType == ViewScaleType.FIT_INSIDE) {
-			if (scaleType == ImageScaleType.IN_SAMPLE_POWER_OF_2 || scaleType == ImageScaleType.POWER_OF_2) {
+			if (scaleType == ImageScaleType.IN_SAMPLE_POWER_OF_2) {
 				while (imageWidth / 2 >= targetWidth || imageHeight / 2 >= targetHeight) { // ||
 					imageWidth /= 2;
 					imageHeight /= 2;
@@ -163,7 +163,7 @@ class ImageDecoder {
 				scale = Math.max(widthScale, heightScale); // max
 			}
 		} else { // ViewScaleType.CROP
-			if (scaleType == ImageScaleType.IN_SAMPLE_POWER_OF_2 || scaleType == ImageScaleType.POWER_OF_2) {
+			if (scaleType == ImageScaleType.IN_SAMPLE_POWER_OF_2) {
 				while (imageWidth / 2 >= targetWidth && imageHeight / 2 >= targetHeight) { // &&
 					imageWidth /= 2;
 					imageHeight /= 2;
@@ -178,7 +178,7 @@ class ImageDecoder {
 			scale = 1;
 		}
 
-		if (loggingEnabled) L.d(LOG_IMAGE_SUBSAMPLED, imageWidth, imageHeight, targetWidth, targetHeight, scale);
+		log(LOG_IMAGE_SUBSAMPLED, imageWidth, imageHeight, targetWidth, targetHeight, scale);
 		return scale;
 	}
 
@@ -206,7 +206,7 @@ class ImageDecoder {
 			if (scaledBitmap != subsampledBitmap) {
 				subsampledBitmap.recycle();
 			}
-			if (loggingEnabled) L.d(LOG_IMAGE_SCALED, (int) srcWidth, (int) srcHeight, destWidth, destHeight);
+			log(LOG_IMAGE_SCALED, (int) srcWidth, (int) srcHeight, destWidth, destHeight);
 		} else {
 			scaledBitmap = subsampledBitmap;
 		}
@@ -217,4 +217,8 @@ class ImageDecoder {
 	void setLoggingEnabled(boolean loggingEnabled) {
 		this.loggingEnabled = loggingEnabled;
 	}
+
+    private void log(String message, Object... args) {
+        if (loggingEnabled) L.i(message, args);
+    }
 }

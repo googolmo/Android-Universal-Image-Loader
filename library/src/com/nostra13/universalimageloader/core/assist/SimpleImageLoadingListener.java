@@ -1,6 +1,7 @@
 package com.nostra13.universalimageloader.core.assist;
 
 import android.graphics.Bitmap;
+import android.view.View;
 
 /**
  * A convenience class to extend when you only want to listen for a subset of all the image loading events. This
@@ -10,22 +11,22 @@ import android.graphics.Bitmap;
  */
 public class SimpleImageLoadingListener implements ImageLoadingListener {
     @Override
-    public void onLoadingStarted() {
+    public void onLoadingStarted(String imageUri, View view) {
         // Empty implementation
     }
 
     @Override
-    public void onLoadingFailed(FailReason failReason) {
+    public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
         // Empty implementation
     }
 
     @Override
-    public void onLoadingComplete(Bitmap loadedImage) {
+    public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
         // Empty implementation
     }
 
     @Override
-    public void onLoadingCancelled() {
+    public void onLoadingCancelled(String imageUri, View view) {
         // Empty implementation
     }
 }

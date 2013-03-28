@@ -2,7 +2,6 @@ package com.nostra13.example.universalimageloader;
 
 import android.app.Application;
 
-import com.nostra13.example.universalimageloader.downloader.ExtendedImageDownloader;
 import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -24,7 +23,6 @@ public class UILApplication extends Application {
                 .threadPriority(Thread.NORM_PRIORITY - 2)
                 .memoryCachePercent(25) // 2 Mb
                 .discCacheFileNameGenerator(new Md5FileNameGenerator())
-                .imageDownloader(new ExtendedImageDownloader(getApplicationContext()))
                 .tasksProcessingOrder(QueueProcessingType.LIFO)
                 .enableLogging(true) // Not necessary in common
                 .build();
