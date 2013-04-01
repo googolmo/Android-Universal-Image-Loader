@@ -35,8 +35,8 @@ import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.assist.ViewScaleType;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
-import com.nostra13.universalimageloader.utils.DiskLruCache.DiskLruCache;
 
+import com.nostra13.universalimageloader.utils.DiskLruCache.DiskLruCache;
 import com.nostra13.universalimageloader.utils.L;
 
 /**

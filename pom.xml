@@ -7,10 +7,10 @@
     <groupId>com.nostra13.universalimageloader</groupId>
     <artifactId>imageloader-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.8.0-SNAPSHOT</version>
+    <version>1.8.1-SNAPSHOT</version>
     <modules>
         <module>library</module>
-        <!-- <module>sample</module> -->
+         <module>sample</module>
     </modules>
 
     <distributionManagement>

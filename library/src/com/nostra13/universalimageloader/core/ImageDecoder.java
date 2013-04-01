@@ -2,7 +2,6 @@ package com.nostra13.universalimageloader.core;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

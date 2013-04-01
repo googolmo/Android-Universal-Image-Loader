@@ -1,7 +1,6 @@
 package com.nostra13.universalimageloader.cache.disc;
 
 import android.graphics.Bitmap;
-import com.nostra13.universalimageloader.cache.disc.DiscCacheAware;
 import com.nostra13.universalimageloader.cache.disc.naming.FileNameGenerator;
 import com.nostra13.universalimageloader.core.DefaultConfigurationFactory;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
